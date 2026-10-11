@@ -1,0 +1,82 @@
+/* x_tickets：材料与砼（材料Agent）。统一中港蓝（--brand），不使用紫色；岗位不分色。预警用既有的红/橙/黄变量。 */
+.xt h1 { font-size: 20px; }
+.xt-card { margin-bottom: 12px; }
+.xt-card.hl { box-shadow: 0 0 0 2px var(--brand), var(--shadow); }
+/* 拍小票：本岗主要动作，做成一枚主按钮 + 单据类型一行（不再用整块大蓝卡）；手机上占满一行、48px 高 */
+.xt-snap { display: flex; align-items: center; gap: 12px 16px; flex-wrap: wrap; margin-bottom: 12px; }
+.xt-shoot { min-height: 40px; padding: 8px 22px; font-size: 15px; font-weight: 600; }
+.xt-shoot .ic { width: 18px; height: 18px; }
+.xt-kindrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.xt-tabrow { margin-top: 2px; }
+
+/* 分页签 */
+.xt-tabs { flex-wrap: wrap; }
+.xt-n { display: inline-block; min-width: 18px; margin-left: 5px; padding: 0 5px; border-radius: 9px; background: var(--red); color: #fff; font-size: 11px; line-height: 17px; text-align: center; }
+.xt-tabs button.on .xt-n { background: #fff; color: var(--brand); }
+
+/* 票据草稿卡 */
+.xt-head { display: flex; gap: 10px; align-items: flex-start; }
+.xt-thumbs { display: flex; flex-wrap: wrap; gap: 6px; flex-shrink: 0; max-width: 198px; }
+.xt-kind { width: auto; min-width: 130px; font-weight: 600; }
+.xt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+.xt-f { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.xt-fl { font-size: 12px; color: var(--ink3); }
+.xt-req { color: var(--red); margin-left: 2px; }
+.xt-fn { font-size: 12px; color: var(--ink3); line-height: 1.35; }
+.xt-f.miss .in { border-color: var(--orange); background: var(--orange-soft); }
+.xt-f.miss .xt-fl { color: var(--orange); }
+.xt-f.doubt .in { border-color: var(--red); background: var(--red-soft); }
+.xt-f.doubt .xt-fn { color: var(--red); }
+.xt-f .row { gap: 6px; }
+.xt-f .row .in { min-width: 0; flex: 1; }
+
+/* 浇筑单元归属 */
+.xt-opts { display: flex; flex-direction: column; gap: 6px; }
+.xt-opt { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; background: #fff; }
+.xt-opt.on { border-color: var(--brand); background: var(--brand-soft); }
+.xt-opt input { margin: 0; }
+
+/* 最近确认 / 微缩图 */
+.xt-recent { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px dashed var(--line2); }
+.xt-recent:last-child { border-bottom: 0; }
+.xt-recent .ev-ph.ev-s { width: 72px; flex: none; }
+.xt-rb { min-width: 0; }
+.xt-rb .row { gap: 6px; }
+.xt-ra { display: flex; gap: 6px; flex: none; }
+
+/* 浇筑单元 */
+.xt-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.xt-kpi { background: var(--brand-soft); border-radius: 8px; padding: 8px 10px; min-width: 0; }
+.xt-kpi .v { font-size: 20px; font-weight: 600; line-height: 1.25; font-variant-numeric: tabular-nums; }
+.xt-kpi .v small { font-size: 12px; font-weight: 400; color: var(--ink3); }
+.xt-kpi .v.pending { color: var(--orange); font-size: 17px; }
+.xt-kpi .v.warn { color: var(--red); }
+.xt-kpi .l { font-size: 12px; color: var(--ink3); line-height: 1.35; }
+.xt-st { width: auto; }
+.xt-spec { padding: 8px 0; border-bottom: 1px dashed #eef0f3; }
+.xt-spec:last-child { border-bottom: 0; }
+.xt-age { width: 78px; } .xt-num { width: 110px; } .xt-rep { width: 130px; } .xt-date { width: 140px; }
+
+/* 预警与首页小卡 */
+.xt-risk + .xt-risk { margin-top: 10px; }
+.xt-slot { margin-bottom: 12px; }
+.xt-slot h3 { display: flex; align-items: center; gap: 8px; }
+.xt-sl { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+
+@media (max-width: 640px) {
+  .xt-snap { gap: 8px; }
+  .xt-shoot { width: 100%; min-height: 48px; font-size: 16px; }
+  .xt-kindrow .seg { flex-wrap: wrap; }
+  .xt-head { flex-direction: column; }
+  .xt-thumbs { max-width: none; }
+  .xt-recent { flex-wrap: wrap; align-items: flex-start; }
+  .xt-rb { flex: 1 1 0; }
+  .xt-ra { width: 100%; justify-content: flex-end; }
+  .xt-kpis { grid-template-columns: repeat(2, 1fr); }
+  .xt-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .xt-rep, .xt-num, .xt-date, .xt-age { width: calc(50% - 4px); }
+}
+/* 一屏化（10-10）：各页签列表用 zb-paged 内部分页（电脑端当前页在面板内滚动） */
+.xt-list > .xt-card:last-child, .xt-list > :last-child .xt-card { margin-bottom: 0; }
+.xt .zb-paged { margin-bottom: 12px; }
+.xt-card .zb-paged { margin-bottom: 0; }

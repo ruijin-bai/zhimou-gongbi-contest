@@ -1,0 +1,48 @@
+/* x_gate：放行Agent。主色沿用中港蓝变量，不另设色，不使用紫色。 */
+.xg-note { margin-bottom: 12px; }
+.xg-kpis .kpi { cursor: pointer; border: 2px solid transparent; }
+.xg-kpis .kpi.on { border-color: var(--brand); }
+.xg-days { flex-wrap: wrap; }
+
+/* 作业卡 */
+.xg-card { border-left: 1px solid var(--line); padding: 12px 14px; }
+.xg-card + .xg-card { margin-top: 10px; }
+.xg-card.v-ready { border-left-color: var(--green); }
+.xg-card.v-near { border-left-color: var(--orange); }
+.xg-card.v-gap { border-left-color: var(--yellow); }
+.xg-card.v-blocked { border-left-color: var(--red); }
+.xg-head { cursor: pointer; }
+.xg-title { font-weight: 600; word-break: break-all; flex: 1 1 140px; }
+.xg-gaps { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.xg-bar { height: 6px; border-radius: 3px; background: #e9edf2; overflow: hidden; margin-top: 8px; }
+.xg-bar > i { display: block; height: 100%; background: var(--green); }
+.xg-arrow { color: var(--ink3); font-size: 12px; }
+
+/* 条件清单 */
+.xg-body { margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 8px; }
+.xg-grp { margin: 10px 0 4px; font-size: 12px; font-weight: 600; color: var(--ink2); }
+.xg-c { padding: 8px 10px; border-radius: 8px; background: #fafbfd; border: 1px solid #eef0f3; }
+.xg-c + .xg-c { margin-top: 6px; }
+.xg-c.e-missing, .xg-c.e-blocked { background: var(--red-soft); border-color: #f4cdcd; }
+.xg-c.e-ready { background: #f4fbf6; border-color: #d6ecde; }
+.xg-c.e-na { opacity: .75; }
+.xg-c-top { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.xg-lbl { word-break: break-all; }
+.xg-sys, .xg-man { margin-top: 3px; line-height: 1.45; }
+.xg-sys { color: var(--ink2); }
+.xg-man { color: var(--brand); }
+.xg-act { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; align-items: center; }
+.xg-ed { margin-top: 8px; padding: 8px; border-radius: 8px; background: #fff; border: 1px solid var(--line); }
+.xg-ed .row { flex-wrap: wrap; }
+.xg-ed .in { flex: 1 1 200px; min-width: 0; }
+.xg-add { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+.xg-add .in { flex: 1 1 220px; min-width: 0; }
+
+/* 首页预警小卡 */
+
+@media (max-width: 860px) {
+  .xg-kpis { grid-template-columns: 1fr 1fr; }
+  .xg-card { padding: 10px 12px; }
+  .xg-act .btn { padding: 7px 12px; }
+}
+.xg-red { color: var(--red); }

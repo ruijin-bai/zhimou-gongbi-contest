@@ -1,0 +1,50 @@
+# gitleaks 配置（阶段 6，2026-09-23）
+#
+# 目的：阻止真实密钥进入仓库（PostgreSQL 口令 / JWT secret / AI key / 任何 token）。
+# 原则：对"历史已知的测试字符串/Fixtures"只做**最小 allowlist**，绝不全局关闭规则。
+#
+# 运行：gitleaks detect --config .gitleaks.toml --redact
+#      gitleaks protect --staged --config .gitleaks.toml   （pre-commit 用）
+
+title = "zhimou-b"
+
+[extend]
+# 在默认规则集基础上补充项目特定规则
+useDefault = true
+
+[[rules]]
+id = "zhimou-jwt-secret"
+description = "硬编码的 JWT secret（应为 env 注入，见 .env.prod.example）"
+regex = '''(?i)ZHIMOU_JWT_SECRET\s*[:=]\s*['"]?([A-Fa-f0-9]{32,})['"]?'''
+tags = ["secret", "jwt"]
+
+[[rules]]
+id = "zhimou-postgres-password"
+description = "硬编码的 PostgreSQL 口令（应为 env 注入）"
+regex = '''(?i)POSTGRES_PASSWORD\s*[:=]\s*['"]([^'"\s]{8,})['"]'''
+tags = ["secret", "db"]
+
+[[rules]]
+id = "zhimou-ai-key"
+description = "硬编码的 AI 供应商 key"
+regex = '''(?i)(AI_API_KEY|ZHIMOU_AI_API_KEY)\s*[:=]\s*['"]?(sk-|[A-Za-z0-9_\-]{24,})['"]?'''
+tags = ["secret", "ai"]
+
+[allowlist]
+description = "最小 allowlist：仅放行示例文件与已知测试固定值"
+paths = [
+  # 只含变量名的模板
+  '''\.env\.example$''',
+  '''\.env\.prod\.example$''',
+  # 测试与文档中的占位/固定测试值
+  '''backend/tests/''',
+  '''docs/''',
+  # 迁移/脚本中的示例
+  '''\.gitleaks\.toml$''',
+]
+regexes = [
+  # Exact synthetic preservation label, not a credential (historical line57 false positive).
+  '''^synthetic-legacy036$''',
+  # 明显的占位符与测试口令（示例/测试专用，不构成真实凭据泄漏）
+  '''(?i)(password_hash="x"|<your[-_]|changeme|placeholder|example|xxx+|123456|Zhimou@2026|zhimou_dev_pw)''',
+]

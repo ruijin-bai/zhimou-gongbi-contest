@@ -1,0 +1,75 @@
+/* x_conceal：隐蔽验收。主色沿用中港蓝变量，不使用紫色，岗位不分色。手机优先。 */
+.cc-back { font-size: 20px; padding: 0 8px 0 0; cursor: pointer; text-decoration: none; }
+.cc-head .ph-title { flex-wrap: wrap; row-gap: 4px; }
+.cc-head .ph-act { display: flex; align-items: center; gap: 6px; }
+.cc-date { width: 160px; display: inline-block; }
+.cc-sup { max-width: 220px; }
+.cc-sel { width: auto; min-width: 90px; margin-top: 4px; padding: 3px 6px; font-size: 13px; }
+.cc-doubt { color: var(--orange); }
+.cc-warn { color: var(--orange); margin-top: 4px; }
+.cc-hist { padding: 3px 0; border-bottom: 1px dashed var(--line); }
+.cc-tag { display: inline-block; margin: 2px 6px 2px 0; padding: 0 8px; border-radius: 10px; background: var(--brand-soft); color: var(--brand); font-size: 12px; }
+.cc-card h2 { margin-bottom: 6px; }
+.cc-gl { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--line); font-size: 14px; }
+
+/* 结论条：齐全=绿，有缺项=红，不会在有缺项时出现“可报验” */
+.cc-check { border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; border: 1px solid var(--line); background: #fff; }
+.cc-check.ok { background: var(--green-soft); border-color: #bfe0cb; }
+.cc-check.bad { background: var(--red-soft); border-color: #f0c4c4; }
+.cc-conc { font-weight: 700; font-size: 16px; }
+.cc-check.ok .cc-conc { color: var(--green); }
+.cc-check.bad .cc-conc { color: var(--red); }
+
+/* 拍摄清单 */
+.cc-shots { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 10px; align-items: start; }
+.cc-shot { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: #fff; }
+.cc-shot.miss { border-color: #f0c4c4; background: #fffafa; }
+.cc-shot.loose { border-style: dashed; background: #fafbfd; }
+.cc-shot-h { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 2px; }
+/* 现场照片统一 ev-photo（4:3 contain，缺文件占位），这里只排网格 */
+.cc-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 8px 0; }
+.cc-ph { position: relative; min-width: 0; }
+.cc-ph .tiny { line-height: 1.3; word-break: break-all; }
+.cc-x { position: absolute; right: 4px; top: 4px; z-index: 1; width: 26px; height: 26px; border: none; border-radius: 50%; background: rgba(0, 0, 0, .55); color: #fff; cursor: pointer; line-height: 26px; padding: 0; }
+.cc-ai { margin-top: 2px; color: var(--ink2); }
+
+/* 数据项 */
+.cc-item { padding: 10px 0; border-bottom: 1px dashed var(--line); }
+.cc-item.pend { background: var(--orange-soft); margin: 0 -8px; padding: 10px 8px; border-radius: 8px; border-bottom-color: transparent; }
+.cc-inrow { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+.cc-inrow .in { flex: 1; min-width: 0; }
+.cc-unit { min-width: 34px; color: var(--ink2); font-size: 13px; }
+
+/* 列表 */
+.cc-rec { display: flex; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px dashed var(--line); cursor: pointer; }
+.cc-rec:last-child { border-bottom: none; }
+.cc-rec-r { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; max-width: 46%; }
+
+/* 选已有照片 */
+.cc-modal { max-width: 640px; max-height: 88vh; overflow: auto; }
+.cc-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-top: 8px; }
+.cc-pk { border: 2px solid transparent; border-radius: 8px; padding: 3px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cc-pk-b { margin-top: 2px; width: 100%; }
+.cc-pk.on { border-color: var(--brand); background: var(--brand-soft); }
+.cc-pk.on .cc-pk-b { background: var(--brand); border-color: var(--brand); color: #fff; }
+.cc-pk.used { opacity: .55; }
+
+/* 模板编辑 */
+.cc-erow { display: flex; gap: 6px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
+.cc-erow .in { flex: 1; min-width: 110px; }
+.cc-unit-in { max-width: 70px; flex: none !important; min-width: 60px !important; }
+.cc-del { color: var(--red); cursor: pointer; font-size: 13px; }
+
+@media (min-width: 861px) {
+  .cc-shots { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 860px) {
+  .cc-date, .cc-sup { width: 100%; max-width: none; }
+  .cc-head .ph-act { width: 100%; }
+  .cc-head .ph-act label { flex: 1; }
+  .cc-photos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cc-x { width: 36px; height: 36px; line-height: 36px; font-size: 18px; }
+  .cc-rec { flex-direction: column; align-items: flex-start; }
+  .cc-rec-r { max-width: none; justify-content: flex-start; }
+  .cc-inrow { flex-wrap: wrap; }
+}

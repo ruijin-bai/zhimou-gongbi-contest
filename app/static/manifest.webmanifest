@@ -1,0 +1,17 @@
+{
+  "id": "/",
+  "name": "智眸工笔",
+  "short_name": "智眸工笔",
+  "description": "工程现场 AI 助手",
+  "lang": "zh-CN",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f3f5f8",
+  "theme_color": "#0f2a44",
+  "icons": [
+    {"src": "/static/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"},
+    {"src": "/static/chec-logo.png", "sizes": "160x160", "type": "image/png", "purpose": "any"}
+  ]
+}

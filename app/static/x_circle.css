@@ -1,0 +1,50 @@
+/* x_circle 样式：现场圈 Agent 化（Agent 同事点评、接力时间线、公告、AI精选）。主色统一中港蓝，不另设配色。 */
+
+/* Agent 头像与标签：与人的评论区分 */
+.circle .av.ag { background: var(--brand); color: #fff; font-size: 18px; }
+.chip.ag-chip { background: var(--brand-soft); color: var(--brand); font-weight: 600; }   /* 智能体标签用浅底，不与人的评论抢视线（10-10 现场圈降密度） */
+.circle .cm.ag-cm .chip.ag-chip { background: #fff; }
+
+/* 评论区里的 Agent 同事 */
+.circle .cm.ag-cm { display: flex; gap: 8px; align-items: flex-start; margin: 4px -4px; padding: 6px 8px; border-radius: 8px; background: var(--brand-soft); border-left: 1px solid var(--brand); }
+.ag-ic { flex: none; width: 26px; height: 26px; border-radius: 50%; background: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 15px; }
+.ag-body { flex: 1; min-width: 0; }
+.ag-body .pre { white-space: pre-wrap; margin-top: 2px; }
+.ag-q { margin-top: 2px; }
+/* 按当前事实复核不通过的旧点评：折叠为一行，原文可展开但划掉 */
+.ag-stale { margin-top: 2px; color: var(--ink2); }
+.ag-stale-text { text-decoration: line-through; }
+.ag-ev { margin: 4px 0 0; padding: 6px 8px 6px 22px; background: #fff; border-radius: 6px; font-size: 12px; color: var(--ink2); }
+.ag-ev li { margin: 3px 0; }
+.ag-tip { margin-top: 4px; }
+
+/* 一张照片的 Agent 接力 */
+.relay { margin-top: 8px; padding: 8px 10px; border-radius: 8px; background: #f8fafc; border: 1px solid var(--line); }
+.relay-steps { list-style: none; margin: 0 0 6px; padding: 0; position: relative; }
+.relay-steps li { display: flex; gap: 10px; padding: 6px 0; position: relative; }
+.relay-steps li + li::before { content: ""; position: absolute; left: 13px; top: -8px; height: 14px; border-left: 1px solid var(--brand-soft); }
+.rl-ic { flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--brand-soft); display: inline-flex; align-items: center; justify-content: center; font-size: 15px; z-index: 1; }
+.rl-b { flex: 1; min-width: 0; word-break: break-word; }
+
+/* 公告 */
+.circle .post.k-notice { border-left: 1px solid var(--brand); }
+.circle .post.pinned { background: linear-gradient(180deg, var(--brand-soft), #fff 60%); }
+.notice .nt-t { margin-top: 10px; font-size: 16px; }
+.notice .nt-ft { margin-top: 8px; gap: 12px; }
+.notice .nt-ft a { cursor: pointer; }
+.nt-reads { margin-top: 8px; padding: 8px 10px; border-radius: 8px; background: #f6f8fa; line-height: 1.8; }
+.notice-composer { margin-bottom: 12px; border: 1px solid var(--brand-soft); border-left: 1px solid var(--brand); }
+.notice-composer textarea.in { resize: vertical; }
+.nc-f { margin: 0; white-space: nowrap; }
+.nc-sel { width: auto; min-width: 130px; flex: 0 1 auto; }
+.nc-pin { display: inline-flex; align-items: center; gap: 4px; font-size: 14px; cursor: pointer; }
+
+/* AI精选：徽标与理由行，沿用中港蓝 */
+.pick-chip { white-space: nowrap; }
+.post-pick { margin-top: 6px; padding: 6px 10px; border-radius: 8px; background: #f1f7fd; border-left: 1px solid var(--accent); line-height: 1.6; }
+
+@media (max-width: 760px) {
+  .circle .cm.ag-cm { margin: 6px 0; }
+  .nc-sel { flex: 1 1 40%; }
+  .notice .nt-ft { gap: 8px 12px; }
+}

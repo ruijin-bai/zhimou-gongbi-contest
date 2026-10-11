@@ -1,0 +1,28 @@
+/* x_cmd 样式：指挥Agent 指令条、动作卡、例会行动项（主色沿用中港蓝，不另设配色） */
+.cmdbar { position: static; border-top: 1px solid var(--line); }
+.cmdbar .in { max-width: 620px; }
+.cmdbar .voice { gap: 0; }
+.cmdbar .voice .small { display: none; }
+.cmdbar .mic { width: 32px; height: 32px; font-size: 15px; box-shadow: none; }
+.cmdbar .btn.primary { white-space: nowrap; }
+.cmd-panel { background: var(--panel); border-bottom: 1px solid var(--line); padding: 10px 20px 16px; }
+.cmd-card { border: 1px solid var(--brand-soft); background: #f8fbff; border-left: 1px solid var(--brand); border-radius: 10px; padding: 12px 14px; margin-top: 8px; }
+.cmd-card.cmd-item { background: #fff; border-color: var(--line); border-left-color: var(--accent); }
+.cmd-evid { margin: 8px 0; padding-left: 18px; color: var(--ink2); font-size: 13px; }
+.cmd-evid li { margin: 2px 0; }
+.cmd-f { display: flex; gap: 10px; align-items: flex-start; margin-top: 8px; }
+.cmd-f > label { flex: 0 0 64px; font-size: 13px; color: var(--ink2); padding-top: 8px; }
+.cmd-pick { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; background: #fff; cursor: pointer; margin-bottom: 6px; }
+.cmd-pick:hover { border-color: var(--brand); }
+.cmd-pick.on { border-color: var(--brand); background: var(--brand-soft); cursor: default; }
+.cmd-q { margin-top: 8px; font-size: 13px; color: var(--orange); }
+.cmd-topics { display: grid; gap: 6px; }
+.cmd-topic { border-left: 1px solid var(--brand-soft); padding: 2px 10px; }
+.cmd-rows { margin-top: 6px; }
+.cmd-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #eef0f3; }
+.cmd-row:last-child { border-bottom: none; }
+@media (max-width: 760px) {
+  .cmd-panel { padding: 8px 12px 14px; }
+  .cmd-f { flex-direction: column; gap: 2px; } .cmd-f > label { padding-top: 0; flex: none; }
+  .cmd-row { flex-wrap: wrap; }
+}

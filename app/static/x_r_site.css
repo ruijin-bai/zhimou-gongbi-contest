@@ -1,0 +1,198 @@
+/* 其余页面改版（10-10）第 site 批专用样式：只放本批页面的样式，共用组件在 x_v8.css
+   页面：现场圈 circle、安全/质量台账 safety/quality/ledger（FindingBoard）、事项详情 finding（FindingDetail）、整改单 tasks、
+   分包履约画像 subs、扫码上报管理 qrcodes、AI 候选缩略图（CandidateBox） */
+
+/* ---------- 台账（FindingBoard）：左列表 + 右详情（≥1100px），窄屏单列卡片 ---------- */
+.rs-split { grid-template-columns: 400px minmax(0, 1fr); gap: 14px; align-items: start; }
+.rs-list { padding: 8px 0 6px; position: sticky; top: 72px; max-height: calc(100vh - 92px); }
+.rs-list > .zb-ch { margin: 0 14px; }
+.rs-list-b { min-height: 0; }
+.rs-li { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; align-items: start; padding: 10px 14px; border-bottom: 1px solid var(--line2); cursor: pointer; }
+.rs-li:last-child { border-bottom: 0; }
+.rs-li:hover { background: #f6f9fe; }
+.rs-li.on { background: var(--brand-soft); box-shadow: inset 3px 0 0 var(--brand); }
+.rs-li:focus-visible, .rs-card:focus-visible { outline: 2px solid var(--brand-2); outline-offset: -2px; }
+.rs-li-b { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.rs-li-b > b { font-size: 14px; line-height: 1.5; font-weight: 700; color: var(--ink); overflow-wrap: anywhere; }
+.rs-li-b > b .chip { margin-right: 6px; vertical-align: 1px; }
+.rs-li-m { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.rs-li-m b { font-weight: 700; color: var(--ink2); }
+.rs-li-m b.tc-over, .rs-card .tc-over { color: var(--red); font-weight: 700; }
+.rs-li .ev-ph, .rs-card .ev-ph { width: 96px; flex: none; }
+.rs-li .ev-ph-b, .rs-card .ev-ph-b { cursor: pointer; }
+
+/* 窄屏卡片（手机、平板）：照片在左，文字在右，单列 */
+.rs-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 10px; }
+.rs-card { flex-direction: row; gap: 12px; align-items: flex-start; padding: 12px; cursor: pointer; }
+.rs-card-t { font-size: 14.5px; line-height: 1.5; color: var(--ink); overflow-wrap: anywhere; }
+.rs-card .row { gap: 6px; }
+
+/* 空态：卡片 + 两行说明 */
+.rs-empty .zb-empty b { display: block; font-size: 15px; color: var(--ink); }
+.rs-empty .zb-empty p { margin: 4px 0 6px; line-height: 1.6; }
+
+/* ---------- 事项详情（FindingDetail）：事实 → 整改前后对照 → AI 复核 → 动作 ---------- */
+.rs-fd { transition: opacity .15s; }
+.rs-fd.rs-fd-busy { opacity: .55; pointer-events: none; }
+.rs-fd-card { padding: 14px 20px 18px; gap: 8px; }
+.rs-fd-chips { gap: 6px; align-items: center; }
+.rs-fd-open { margin-left: auto; }
+.rs-fd-t { margin: 2px 0 0; font-size: 19px; line-height: 1.45; font-weight: 800; color: var(--ink); overflow-wrap: anywhere; }
+.rs-facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; margin: 4px 0 0; font-size: 14px; line-height: 1.6; }
+.rs-facts dt { color: var(--ink3); }
+.rs-facts dd { margin: 0; color: var(--ink); overflow-wrap: anywhere; }
+.rs-facts dd.muted { color: var(--ink2); }
+.rs-ev { margin-top: 8px; }
+.rs-ev .ev-pair { max-width: 560px; gap: 12px; }
+.rs-ev .ev-ph figcaption { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12.5px; }
+.rs-ev .ev-ph-tag { font-size: 12px; padding: 2px 8px; }
+.rs-fd-acts { gap: 8px; }
+.rs-fd-assign { padding-top: 8px; border-top: 1px dashed var(--line2); }
+.rs-assign { gap: 8px; }
+.rs-assign select.in { width: auto; min-width: 200px; max-width: 100%; flex: 0 1 auto; }
+
+/* AI 候选缩略图（CandidateBox）：4:3 证据照片在左 */
+.cand-box > .row > .ev-ph { margin-right: 10px; flex: none; }
+
+/* ---------- 现场圈：证据照片 4:3、Agent 点评收成三行 ---------- */
+.circle .rs-pics { margin-top: 10px; max-width: 480px; }
+.circle .ag-txt { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer; }
+.circle .ag-txt.open { display: block; overflow: visible; cursor: default; }
+.orig-pics .ev-ph, .rd-photos .ev-ph, .dm-ph .ev-ph, .dm-ref .ev-ph { flex: none; }
+.orig-pics, .dm-ph, .rd-photos { flex-wrap: wrap; }
+
+/* ---------- 分包履约画像 ---------- */
+.rs-sp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(460px, 1fr)); gap: 12px; }
+.rs-sp-card { padding-bottom: 14px; }
+.rs-sp-src { border-right: 0; padding-right: 0; }
+.rs-sp-t { width: 100%; font-size: 14px; }
+table.t.rs-sp-t th, table.t.rs-sp-t td { padding: 8px 8px; text-align: left; border-radius: 0; }
+table.t.rs-sp-t thead th { font-size: 12.5px; font-weight: 600; color: var(--ink3); }
+table.t.rs-sp-t tbody th { font-weight: 700; color: var(--ink); white-space: nowrap; background: transparent; border-bottom: 1px solid var(--line2); }
+table.t.rs-sp-t td.tc-over { color: var(--red); font-weight: 700; }
+.rs-sp-eval { margin-top: 10px; padding: 10px 12px; border-radius: 8px; background: #f5f8fd; border: 1px solid var(--line2); }
+.rs-sp-eval.is-mock { background: #f7f7f8; }
+.rs-sp-eval.is-mock p { color: var(--ink2); }
+.rs-sp-eh { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13.5px; }
+.rs-sp-eval p { margin: 6px 0 2px; font-size: 14px; line-height: 1.6; color: var(--ink); }
+
+/* ---------- 扫码上报管理：左上报列表（主任务），右生成与二维码 ---------- */
+.rs-qr-grid { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 12px; align-items: start; }
+.rs-qr-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.rs-qr-subs .zb-ch .seg { flex: none; }
+.rs-n-warn { background: #fff1e0; color: var(--orange, #b25b00); }
+.rs-qsub { gap: 14px; }
+.rs-qs-ph { flex: none; width: 200px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; align-content: start; }
+.rs-qs-ph .ev-ph:only-child { grid-column: 1 / -1; }
+.rs-qs-b { min-width: 0; }
+.rs-qr-new { gap: 8px; }
+.rs-qr-new select.in { width: auto; flex: none; }
+button.qthumb { padding: 0; }
+
+/* ---------- 宽度断点 ---------- */
+@media (min-width: 1100px) and (max-width: 1400px) {
+  .rs-split { grid-template-columns: 360px minmax(0, 1fr); }
+  .rs-li { grid-template-columns: 84px minmax(0, 1fr); }
+  .rs-li .ev-ph { width: 84px; }
+  .rs-qr-grid { grid-template-columns: minmax(0, 1fr) 340px; }
+}
+@media (max-width: 1099px) {
+  .rs-qr-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .rs-cards { grid-template-columns: minmax(0, 1fr); }
+  .rs-card { padding: 10px; }
+  .rs-card .ev-ph { width: 88px; }
+  .rs-fd-card { padding: 12px 14px 14px; }
+  .rs-fd-t { font-size: 17px; }
+  .rs-facts { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .rs-facts dd { margin-bottom: 6px; }
+  .rs-ev .ev-pair { gap: 8px; }
+  .rs-fd-acts .btn, .rs-assign .btn, .rs-assign select.in { min-height: 44px; }
+  .rs-assign select.in { flex: 1 1 100%; min-width: 0; }
+  .rs-fd-open { margin-left: 0; }
+  .circle .rs-pics { max-width: 100%; }
+  .circle .rs-pics .ev-ph.ev-l { width: 100%; }
+  .rs-sp-grid { grid-template-columns: minmax(0, 1fr); }
+  .rs-sp-t thead { display: none; }
+  table.t.rs-sp-t, .rs-sp-t tbody { display: block; width: 100%; }
+  table.t.rs-sp-t tr { display: flex; flex-wrap: wrap; gap: 2px 14px; padding: 8px 0; border-bottom: 1px solid var(--line2); }
+  table.t.rs-sp-t tr:last-child { border-bottom: 0; }
+  table.t.rs-sp-t tbody th { flex: 1 1 100%; padding: 0; border: 0; background: transparent; font-size: 14px; }
+  table.t.rs-sp-t td { padding: 0; border: 0; font-size: 13.5px; }
+  .rs-qsub { flex-direction: column; }
+  .rs-qs-ph { width: 100%; }
+  .rs-qs-ph .ev-ph:only-child { grid-column: auto; }
+  .rs-qr-subs .zb-ch .seg { width: 100%; display: flex; }
+  .rs-qr-subs .zb-ch .seg button { flex: 1; min-height: 44px; }
+  .rs-qr-new .in, .rs-qr-new .btn { min-height: 44px; }
+  .rs-qr-new select.in { flex: 1; }
+  .rs-qsub .btn { min-height: 44px; }
+}
+
+/* 窄屏台账：小结先收成一行系统统计，点开看完整小结（列表是主要事项，靠前） */
+.rs-dg-m { margin-bottom: 10px; padding: 10px 14px; gap: 4px; }
+.rs-dg-l { font-size: 14px; line-height: 1.6; color: var(--ink); }
+.rs-dg-m .zb-link { align-self: flex-start; min-height: 44px; padding: 0; }
+@media (max-width: 640px) {
+  .rs-board .ph-band .seg button, .circle .ph-band .seg button { min-height: 44px; }
+}
+
+/* ---------- 全站一屏化（10-10 第 site 批）：现场圈动态流、台账、详情、画像、扫码上报 ---------- */
+/* 现场圈（RJ 10-10 例外：朋友圈式，不分页）：电脑端整条动态流在 v-fit 固定高度面板内连续滚动，滚到底自动取更早的动态并追加在面板内；
+   手机端整页连续下滑，同样滚到底自动加载 */
+.circle .cf-more { justify-content: center; }
+.circle .cf-board .zb-clamp-more { margin-top: 0; }
+.circle .post-pick .zb-clamp-more { font-size: 12px; }
+.circle .post-ai > .tiny { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.circle .cf-cm-all { margin-top: 2px; padding: 0; font-size: 13px; }
+/* 记录流按日期分组：日期标题与动态同宽居中 */
+.circle .cf-board > .cf-day { max-width: var(--cf-col); margin: 14px auto 0; font-size: 12.5px; font-weight: 700; color: var(--ink3); letter-spacing: .02em; }
+.circle .cf-board > .cf-day + article.post { padding-top: 8px; }
+.circle .cf-board > .cf-more, .circle .cf-board > .cf-end { padding: 12px 0 16px; text-align: center; }
+/* “全部评论”抽屉（挂在 body 下，不在 .circle 里）：沿用现场圈评论样式，智能体点评不截断 */
+.zb-dw .cm-list .cm { padding: 8px 0; border-bottom: 1px solid var(--line2); font-size: 14px; line-height: 1.6; }
+.zb-dw .cm-list .cm:last-child { border-bottom: 0; }
+.zb-dw .cm-list .cm.ag-cm { display: flex; gap: 8px; align-items: flex-start; margin: 4px 0; padding: 8px 10px; border-radius: 8px; background: var(--brand-soft); border-left: 1px solid var(--brand); }
+.zb-dw .cm-list .ag-txt { white-space: pre-wrap; margin-top: 2px; }
+
+/* 手机：真实项目里很长的英文作业名、编码不撑宽页面（标签、按钮、标题都允许折行） */
+@media (max-width: 860px) {
+  :is(.circle, .rs-board, .rs-fd, .rs-sp, .rs-qr) { overflow-wrap: anywhere; min-width: 0; }
+  :is(.circle, .rs-board, .rs-fd, .rs-sp, .rs-qr) :is(.chip, .btn, h1, h2, .zb-n, .zb-link, .zb-src, .zb-sys, b, a, th, td) { white-space: normal; max-width: 100%; min-width: 0; overflow-wrap: anywhere; }
+  :is(.circle, .rs-board, .rs-fd, .rs-sp, .rs-qr) :is(.row, .zb-ch, .ph-row, .ph-main, .ph-title) > * { min-width: 0; }
+  .rs-sp table.t.rs-sp-t tbody th { white-space: normal; }
+}
+
+/* 台账（FindingBoard）：小结收成一行系统统计，完整小结（含 AI 判断与批量催办）点开在抽屉里看；
+   宽屏左列表、右详情各自在 v-fit 面板内滚动，页面本身不再超出视口 */
+@media (min-width: 861px) {
+  .rs-dg-m { flex-direction: row; align-items: center; gap: 14px; padding: 8px 16px; }
+  .rs-dg-l { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rs-dg-m .zb-link { min-height: 32px; flex: none; }
+}
+@media (min-width: 1100px) {
+  .rs-split .rs-list { position: static; max-height: none; display: block; padding-top: 0; }
+  .rs-split .rs-list > .zb-ch { margin: 0; padding: 8px 14px 0; }
+  .rs-split .rs-list .zb-pg { margin: 0 14px; padding-bottom: 2px; }
+  .rs-fd-pane { border-radius: 12px; }
+}
+.rs-qr .zb-pg { margin-top: 4px; }
+
+/* 事项详情：事实与动作在左（rs-fd-a / rs-fd-b），整改前后照片在右；单独打开时宽屏两栏，嵌在台账右侧时仍单列 */
+.rs-fd-a, .rs-fd-b { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.rs-fd-b:empty { display: none; }
+@media (min-width: 1100px) {
+  .rs-fd:not(.fd-embed) .rs-fd-card:has(> .rs-ev) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 46%); grid-template-rows: auto 1fr; column-gap: 28px; row-gap: 8px; align-items: start; }
+  .rs-fd:not(.fd-embed) .rs-fd-card:has(> .rs-ev) > .rs-fd-a { grid-column: 1; grid-row: 1; }
+  .rs-fd:not(.fd-embed) .rs-fd-card:has(> .rs-ev) > .rs-fd-b { grid-column: 1; grid-row: 2; }
+  .rs-fd:not(.fd-embed) .rs-fd-card > .rs-ev { grid-column: 2; grid-row: 1 / span 2; margin-top: 0; }
+  .rs-fd:not(.fd-embed) .rs-fd-card > .rs-ev .ev-pair { max-width: none; }
+}
+
+/* 分包履约画像：评语最多 3 行，全文点开；数字与评语来源说明收进页头问号 */
+.rs-sp-et { margin: 6px 0 2px; font-size: 14px; line-height: 1.6; color: var(--ink); }
+.rs-sp-eval.is-mock .rs-sp-et { color: var(--ink2); }
+@media (max-width: 860px) {
+  .circle .ag-txt { -webkit-line-clamp: 2; }
+}

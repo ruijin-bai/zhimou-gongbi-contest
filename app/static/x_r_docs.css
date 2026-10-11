@@ -1,0 +1,198 @@
+/* 其余页面改版（10-10）第 docs 批专用样式：只放本批页面的样式，共用组件在 x_v8.css
+   页面：报表·日报 logs、日志详情 log、周报/月报列表 rpt、周报/月报详情 report、致分包文书/项目部来函 letters、例会行动项 meetings */
+
+/* ---------- 通用 ---------- */
+.zb-ch h2.rd-wrap { white-space: normal; overflow-wrap: anywhere; }
+.grid.stack > .zb-card, .col > .zb-card { min-width: 0; }
+
+/* ---------- 日志照片：ev-photo 4:3 网格；作者可移除、可继续拍 ---------- */
+.rd-ph { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.rd-phw { position: relative; min-width: 0; }
+.rd-phw .ev-ph { width: 100%; }
+.rd-phx { position: absolute; right: 4px; top: 4px; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 50%; background: rgba(19, 37, 77, .72); color: #fff;
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.rd-phx .ic { width: 15px; height: 15px; margin: 0; }
+.rd-phadd { aspect-ratio: 4 / 3; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 0;
+  border: 1.5px dashed var(--brand-line, #b8c9e8); border-radius: 6px; background: #f5f8fd; color: var(--brand); font: inherit; font-size: 13.5px; cursor: pointer; }
+.rd-phadd .ic { width: 22px; height: 22px; margin: 0; }
+.rd-phadd:disabled { cursor: default; color: var(--ink3); }
+.rd-note { padding: 3px 0; line-height: 1.6; }
+.rd-meta { padding: 10px 16px; }
+
+/* ---------- 周确认（技术员的周报 / 日志详情）：电脑端七天格压成一行，语音按钮与补充说明并排 ---------- */
+@media (min-width: 861px) {
+  .wk-days { margin: 2px 0 8px; }
+  .wk-day { display: flex; align-items: baseline; justify-content: center; gap: 5px; padding: 6px 0; }
+  .wk-day b, .wk-day span, .wk-day i { display: inline; }
+  .wk-day span { font-size: 15px; }
+  .rd-wsup { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 10px; }
+  .rd-wsup > textarea { width: 100%; min-width: 0; }
+}
+
+/* ---------- 报表·日报（分包日志 / 我的日志） ---------- */
+.rd-logs { padding: 10px 0 4px; }
+.rd-logs > .zb-ch { margin: 0 16px; }
+.rd-logs .log-t { margin: 0; }
+.log-t td.rd-mm { display: none; }
+.rd-flag { color: var(--orange); font-weight: 600; }
+
+/* ---------- 报表·周报 / 月报列表 ---------- */
+.rd-rpl { padding: 0; gap: 0; }
+.rd-rpl-h { padding: 8px 16px 4px; margin: 0; }
+.rd-rpl-h .zb-src, .rd-rpt .zb-ch .zb-src, .rd-logs .zb-ch .zb-src { border-right: 0; }
+.rd-rpt { padding-bottom: 6px; }
+/* 宽屏左列报告列表：zb-paged 内部分页（每页 8 份），当前页列表自带 v-fit，与右侧正文面板同组分配高度 */
+.rd-rpl .zb-pg { padding: 6px 12px; border-top: 1px solid var(--line2); }
+.rd-hid { padding: 6px 16px 0; }
+.rd-rt { margin: 0; }
+.rd-rt td.rd-p b { margin-right: 4px; }
+.ph-band .rp-date { color: #fff; }
+.ph-band .rp-date .in { color: var(--ink); background: #fff; }
+
+/* ---------- 周报 / 月报详情：正文 + 报表目录 ---------- */
+/* 页头固定（标题、流程、操作），数字守卫一行横幅，正文在阅读面板里滚动（v-fit）；阅读面板里是文书正文，不截断 */
+.rv:not(.gb-doc) .ph-steps { padding: 7px 14px; margin-top: 10px; }
+.rv:not(.gb-doc) .ph-steps .n { width: 24px; height: 24px; }
+.rv .ph-meta .rv-meta { color: var(--ink3); }
+.rv .ph-meta a + .rv-meta { margin-left: 12px; }
+.rv > .rv-bn { margin: 10px 0 0; padding: 8px 12px; line-height: 1.6; }
+.rv-wrap { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; min-width: 0; }
+.rv-main { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.rv-read { position: relative; display: block; min-width: 0; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 4px 24px 18px; }
+.rv-read > .zb-card { border: 0; border-radius: 0; padding: 14px 0 0; background: none; box-shadow: none; }
+.rv-read > .zb-card + .zb-card { border-top: 1px solid var(--line2); margin-top: 14px; }
+.rv-read > .zb-card > .zb-ch { margin-bottom: 6px; }
+.rv-sec, .rv-k10, .rv-media { scroll-margin-top: 72px; }
+.rv-sec > .zb-ch h2 { white-space: normal; }
+.rv-ev { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+.rv-t td.nw { white-space: nowrap; }   /* 短值（日期、类型、编号）不折行，长文字列自然换行 */
+.rv-k10 .zb-ch .zb-src { border-right: 0; }
+.rv-k10 .k10r-c .k10-v { white-space: normal; }   /* 本页列宽有限：单位“万（币种未注明）”整体换到下一行，不溢出格子 */
+.rv-k10 .k10r-c .k10-v em { display: inline-block; white-space: nowrap; margin-left: 2px; }
+/* 目录：默认是面板上方一行（可横滑）；独立报告页电脑宽屏在右侧竖排 */
+.rv-toc { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.rv-toc-h { flex: none; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 800; color: var(--ink); }
+.rv-toc-h .ic { width: 17px; height: 17px; margin: 0; color: var(--brand-2); }
+.rv-toc-l { flex: 1; min-width: 0; display: flex; flex-wrap: nowrap; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.rv-toc-l::-webkit-scrollbar { display: none; }
+.rv-toc-l a { flex: none; white-space: nowrap; padding: 4px 10px; border-radius: 6px; background: var(--brand-soft); color: var(--brand); font-size: 13px; cursor: pointer; text-decoration: none; }
+.rv-toc-l a:hover { background: #dce8fb; }
+.rv-toc-l a.on { background: var(--brand); color: #fff; font-weight: 700; }
+@media (min-width: 1280px) {
+  .rv-side { display: grid; grid-template-columns: minmax(0, 1fr) 184px; gap: 16px; align-items: start; }
+  .rv-side > .rv-main { grid-column: 1; grid-row: 1; }
+  .rv-side > .rv-toc { grid-column: 2; grid-row: 1; flex-direction: column; align-items: stretch; gap: 0; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 12px 10px;
+    align-self: stretch; contain: size; overflow-y: auto; scrollbar-width: thin; }   /* 目录不撑高这一行：高度跟正文面板，目录长了自己滚 */
+  .rv-side .rv-toc-h { padding: 2px 0 6px; border-bottom: 1px solid var(--line2); }
+  .rv-side .rv-toc-l { flex-direction: column; gap: 2px; margin-top: 6px; overflow: visible; }
+  .rv-side .rv-toc-l a { background: none; border-radius: 0; border-left: 3px solid var(--line2); padding: 6px 10px; color: var(--ink2); font-size: 13.5px; font-weight: 400; white-space: normal; }
+  .rv-side .rv-toc-l a:hover, .rv-side .rv-toc-l a.on { border-left-color: var(--brand); background: var(--brand-soft); color: var(--brand); font-weight: 700; }
+}
+/* 嵌在周报/月报列表右侧时：右侧卡片本身就是一页公文，阅读面板不再套边框 */
+.rv-embed .ph-meta .rv-meta { font-size: 12.5px; }
+.rp-detail:has(> .rv-embed) { padding: 14px 20px 12px; }
+.rv-embed:not(.gb-doc) .ph { border-bottom: 0; padding-bottom: 0; }
+.rv-embed:not(.gb-doc) .ph-steps { padding: 5px 12px; margin-top: 8px; }
+.rv-embed:not(.gb-doc) .ph-steps .n { width: 22px; height: 22px; }
+.rv-embed > .rv-bn { margin-top: 8px; padding: 6px 12px; }
+.rv-embed .rv-wrap { margin-top: 8px; }
+.rv-embed .rv-read { border: 0; border-top: 1px solid var(--line2); border-radius: 0; padding: 0 6px 6px 0; }
+.rv-embed .rv-toc-h { display: none; }
+.rv-pgn { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.rv-pgn .btn { min-height: 44px; min-width: 96px; justify-content: center; }
+
+/* ---------- 文书分区页（GongbiHome）：起草规则收进“可引用事实”下的小问号 ---------- */
+.gb-side > * { flex-shrink: 0; }
+.gb-fn .htip { margin-left: 4px; vertical-align: -2px; }
+.gb-fn .htip-pop .gb-rules { color: inherit; }
+.gb-mtl { display: flex; flex-direction: row; align-items: center; gap: 8px; text-align: left; }
+.gb-mtl .gb-mt { flex: 1; min-width: 0; }
+.gb-mtgo { flex: none; display: inline-flex; align-items: center; gap: 2px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+.gb-mtgo .ic { width: 13px; height: 13px; margin: 0; }
+.gb-lns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 12px; }
+.gb-lns .gb-ln { border-bottom: 1px solid var(--line2); }
+.gb-lns .gb-ln > .ic:last-child { display: none; }
+.gb-lns .gb-ln span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13.5px; }
+.gb-lns .gb-ln { gap: 6px; }
+@media (max-width: 640px) { .gb-lns { grid-template-columns: minmax(0, 1fr); } .gb-lns .gb-ln > .ic:last-child { display: inline-block; } .gb-mtgo { min-height: 44px; } }
+
+/* ---------- 致分包文书 / 项目部来函 ---------- */
+.gb-act .row.between > div:first-child { min-width: 0; overflow-wrap: anywhere; }
+
+/* ---------- 例会行动项 ---------- */
+.rd-mt .zb-ch .zb-src { border-right: 0; }
+.rd-mt-sel { max-width: 300px; }
+.rd-kpis { margin-top: 4px; }
+.rd-kpis .zb-kpi { cursor: default; }
+.rd-kpis .zb-kpi:hover { border-color: var(--line); box-shadow: none; }
+.rd-mt-h { display: flex; align-items: center; gap: 8px; margin: 14px 0 0; font-size: 15px; }
+
+/* ---------- 手机：表格改卡片行，触控 ≥44px，单列 ---------- */
+@media (max-width: 760px) {
+  /* 日志列表：每份日志一张卡（日期 + 状态 / 作者 / 概述 / 照片与需确认） */
+  .rd-logs { background: none; border: 0; padding: 0; }
+  .rd-logs > .zb-ch { margin: 0 0 8px; }
+  .rd-logs .log-t tr.rd-r { grid-template-columns: minmax(0, 1fr) auto; gap: 3px 10px; min-height: 44px; margin-bottom: 8px; cursor: pointer; }
+  .rd-logs .log-t tr.rd-r > td { display: block; grid-column: 1 / -1; grid-row: auto; font-weight: 400; font-size: 13.5px; color: var(--ink2); }
+  .rd-logs .log-t tr.rd-r > td.rd-d { grid-column: 1; grid-row: 1; font-weight: 700; font-size: 14.5px; color: var(--ink); }
+  .rd-logs .log-t tr.rd-r > td.rd-st { grid-column: 2; grid-row: 1; }
+  .rd-logs .log-t tr.rd-r > td.rd-s { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.5; }
+  .rd-logs .log-t tr.rd-r > td.hide-m { display: none; }
+  .rd-logs .log-t tr.rd-r > td.rd-mm { font-size: 12.5px; color: var(--ink3); }
+  /* 一屏化：照片数/需确认并到日期那一行，卡片少一行 */
+  .rd-logs .log-t tr.rd-r { grid-template-columns: auto minmax(0, 1fr) auto; gap: 2px 10px; margin-bottom: 6px; }
+  .rd-logs .log-t tr.rd-r > td.rd-mm { grid-column: 2; grid-row: 1; align-self: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rd-logs .log-t tr.rd-r > td.rd-st { grid-column: 3; }
+  .rd-logs .log-t tr.rd-r > td.rd-a { grid-column: 1 / -1; }
+  .rd-logs .log-t tr.lg-h > td { display: block; }
+  .rd-logs .log-t tr.lg-h .es { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+
+  /* 周报/月报列表 */
+  .rd-rt thead { display: none; }
+  .rd-rt, .rd-rt tbody { display: block; width: 100%; }
+  .rd-rt tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 8px; align-items: center; min-height: 44px; padding: 10px 2px; border-bottom: 1px solid var(--line2); }
+  .rd-rt td { display: block; padding: 0 !important; border: 0 !important; }
+  .rd-rt td.rd-p { grid-column: 1; grid-row: 1; white-space: normal; }
+  .rd-rt td.rd-st { grid-column: 2; grid-row: 1; }
+  .rd-rt td.rd-ck { grid-column: 1 / -1; }
+  .rd-rt td.hide-m { display: none; }
+
+  /* 报表正文里的统计表、来函里的表：一行一张卡，栏名在左 */
+  .rv-t thead { display: none; }
+  .rv-t, .rv-t tbody, .rv-t tr { display: block; width: 100%; }
+  .rv-t tr { margin-bottom: 8px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+  .rv-t td { display: grid; grid-template-columns: 6.5em minmax(0, 1fr); gap: 8px; padding: 3px 0 !important; border: 0 !important; white-space: normal !important; overflow-wrap: anywhere; }
+  .rv-t td::before { content: attr(data-l); color: var(--ink3); font-size: 12.5px; }
+  .rv-wrap .scroll-x, .gb-read .scroll-x { overflow: visible; }
+  .rv-ev { grid-template-columns: minmax(0, 1fr); }
+  .rv-read { padding: 2px 14px 12px; }
+  .rv-toc-h { display: none; }
+  .rv-toc-l a { min-height: 44px; display: inline-flex; align-items: center; padding: 0 12px; }
+  .rv-toc { scroll-margin-top: 64px; }
+  /* 手机页头流程只显示当前步；已发布（全部完成）时没有当前步，改显示最后一步“✓ 发布”，不留空框 */
+  .rv .ph-steps:not(:has(li.cur)) li:last-child { display: flex; }
+  .rv .ph-steps:not(:has(li.cur)) li:last-child::before { display: none; }
+
+  /* 日志照片：两列缩略，点开看原图；移除、拍照按钮够大 */
+  .rd-ph { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rd-phx { width: 36px; height: 36px; }
+
+  /* 来函 */
+  .gb-act .btn, .gb-form .btn { min-height: 44px; }
+  .gb-form .in { max-width: none !important; width: 100%; }
+
+  /* 例会 */
+  .rd-mt-sel { max-width: none; width: 100%; min-height: 44px; }
+  .rd-mt .cmd-row .btn { min-height: 44px; }
+  .rd-mt .zb-ch .zb-src { white-space: normal; }
+}
+
+/* ---------- 手机：真实项目里的长英文作业名、编码不撑破页面（本批页面根 .rd-fx / .rpt-hub 内） ---------- */
+@media (max-width: 760px) {
+  :is(.rd-fx, .rpt-hub) .zb-ch > *, :is(.rd-fx, .rpt-hub) .zb-ch h2 { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+  :is(.rd-fx, .rpt-hub) :is(.chip, .nowrap, .btn, .zb-kpi-v, .zb-kpi-l, .mic) { white-space: normal; overflow-wrap: anywhere; min-width: 0; max-width: 100%; }
+  :is(.rd-fx, .rpt-hub) :is(a, b, span, small, label, td, th, li, p, h1, h2, h3, button, i) { overflow-wrap: anywhere; }
+  :is(.rd-fx, .rpt-hub) :is(.readrow, .zb-kpi, .zb-kpi-b, .ph-main, .ph-title, .ph-act, .row, .wrap) > * { min-width: 0; }
+  :is(.rd-fx, .rpt-hub) :is(.zb-kpi, .zb-kpi-b, .ph-main, .ph-act) { min-width: 0; max-width: 100%; }
+  :is(.rd-fx, .rpt-hub) .ph-title { flex-wrap: wrap; min-width: 0; }
+}

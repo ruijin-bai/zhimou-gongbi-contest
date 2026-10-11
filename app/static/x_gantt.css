@@ -1,0 +1,42 @@
+/* x_gantt：P6 计划横道图。只用颜色令牌；主色＝普通作业，红橙绿只表示状态（关键/今天/已完成）。 */
+.gt-bar { align-items: center; gap: 6px 14px; margin-bottom: 8px; }
+.gt-lg { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: var(--ink2); }
+.gt-sw { display: inline-block; width: 18px; height: 8px; border-radius: 2px; background: var(--brand); }
+.gt-sw.crit { background: var(--red); } .gt-sw.done { background: var(--green); }
+.gt-sw.base { height: 3px; background: var(--ink3); opacity: .5; }
+.gt-ln { display: inline-block; width: 0; height: 12px; border-left: 2px dashed var(--brand); }
+.gt-ln.td { border-left: 2px solid var(--orange); }
+.gt-wrap { overflow: auto; max-height: 72vh; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+.gt-in { position: relative; }
+.gt-row { display: flex; height: 26px; border-bottom: 1px solid var(--bg); }
+.gt-l { position: sticky; left: 0; z-index: 2; flex: none; width: 300px; box-sizing: border-box; padding: 0 8px; background: var(--panel);
+  border-right: 1px solid var(--line); font-size: 12.5px; line-height: 26px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gt-r { position: relative; flex: none; }
+.gt-code { font-weight: 600; font-variant-numeric: tabular-nums; }
+.gt-head { position: sticky; top: 0; z-index: 4; height: 30px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.gt-head .gt-l { z-index: 5; line-height: 30px; font-weight: 600; color: var(--ink2); }
+.gt-tick { position: absolute; top: 7px; padding-left: 4px; font-size: 11.5px; color: var(--ink3); white-space: nowrap; border-left: 1px solid var(--line); line-height: 16px; }
+.gt-tick.yr { color: var(--ink); font-weight: 600; }
+.gt-body { position: relative; }
+.gt-vg { position: absolute; top: 0; bottom: 0; width: 0; border-left: 1px solid var(--bg); pointer-events: none; }
+.gt-vl { position: absolute; top: 0; bottom: 0; width: 0; z-index: 1; pointer-events: none; border-left: 2px dashed var(--brand); }
+.gt-vl.td { border-left: 2px solid var(--orange); }
+.gt-grp { cursor: pointer; }
+.gt-grp .gt-l { background: var(--bg); display: flex; align-items: center; gap: 4px; }
+.gt-grp .gt-l b { overflow: hidden; text-overflow: ellipsis; }
+.gt-sum { position: absolute; top: 11px; height: 4px; background: var(--ink3); opacity: .55; border-radius: 2px; }
+.gt-base { position: absolute; top: 19px; height: 3px; background: var(--ink3); opacity: .45; border-radius: 2px; }
+.gt-b { position: absolute; top: 5px; height: 12px; border-radius: 3px; background: var(--brand-soft); border: 1px solid var(--brand); box-sizing: border-box; overflow: hidden; }
+.gt-b .gt-p { height: 100%; background: var(--brand); }
+.gt-b.crit { background: var(--red-soft); border-color: var(--red); } .gt-b.crit .gt-p { background: var(--red); }
+.gt-b.done { background: var(--green-soft); border-color: var(--green); } .gt-b.done .gt-p { background: var(--green); }
+.gt-dm { position: absolute; top: 7px; width: 10px; height: 10px; background: var(--brand); transform: rotate(45deg); }
+.gt-dm.crit { background: var(--red); } .gt-dm.done { background: var(--green); }
+.gt-lg .gt-dm { position: static; display: inline-block; width: 8px; height: 8px; }
+@media (max-width: 860px) { .gt-l { width: 160px; } }
+
+/* 全屏查看（RJ 10-09）：铺满浏览器窗口，图表区随窗口高度伸展；页面其余部分不滚动 */
+.gt.gt-full { position: fixed; inset: 0; z-index: 900; display: flex; flex-direction: column; padding: 12px 16px; background: var(--panel, #fff); }
+.gt.gt-full .gt-wrap { flex: 1; max-height: none; min-height: 0; }
+body.gt-lock { overflow: hidden; }
+.gt-bar .btn.sm .ic { margin-right: 4px; }

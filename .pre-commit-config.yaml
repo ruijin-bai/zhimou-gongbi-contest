@@ -1,0 +1,25 @@
+# pre-commit 配置（阶段 6，2026-09-23）
+#
+# 安装：pip install pre-commit && pre-commit install
+# 手动全量：pre-commit run --all-files
+#
+# 作用：提交前阻止密钥入库（gitleaks）+ 基础卫生检查（大文件 / 冲突标记）。
+
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks
+        name: gitleaks 密钥扫描（暂存区）
+        args: ["--config", ".gitleaks.toml", "--redact"]
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: check-merge-conflict        # 阻止 <<<<<<< 入库
+      - id: end-of-file-fixer
+        exclude: \.(dump|sha256|tar\.gz)$
+      - id: trailing-whitespace
+        exclude: \.(dump|sha256|tar\.gz)$
+      - id: check-added-large-files     # 大文件（dump/影像/依赖）不得入库
+        args: ["--maxkb=2048"]

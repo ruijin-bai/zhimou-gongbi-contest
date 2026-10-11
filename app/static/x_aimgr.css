@@ -1,0 +1,151 @@
+/* x_aimgr：模型与额度 */
+.aim-warn { border-left: 1px solid var(--orange); background: var(--orange-soft); margin-bottom: 12px; font-size: 13px; }
+.aim-bar { height: 8px; border-radius: 4px; background: var(--brand-soft); overflow: hidden; min-width: 120px; }
+.aim-bar i { display: block; height: 100%; background: var(--brand); border-radius: 4px; }
+.aim-bar i.hot { background: var(--orange); }
+.aim-ck { display: inline-flex; align-items: center; gap: 4px; margin: 4px 14px 0 0; }
+.aim-days { height: 90px; }
+.aim-days div { background: transparent; }
+
+/* ======================================================================
+   公司领导 · 多项目履约总览（cockpit.js）与系统管理员 · 系统概况（roles.js SysHome）：线程 F 的页面样式，组件沿用 x_v8.css 的 zb-*。
+   1366×768 紧凑：页头 78 · 指标 74 · 第二行 ≈200 · 第三行 ≈150～230，行距 9；1440×900 舒展。手机独立组织，辅助块点标题展开。
+   ====================================================================== */
+.ld-home, .sy-home { --gap: 12px; display: flex; flex-direction: column; gap: var(--gap); }
+/* 页头横幅里放统一页头组件（标题、用途问号、演示日、右侧操作） */
+.ld-home .zb-hero-tx, .sy-home .zb-hero-tx { right: 24px; }
+.ld-home .zb-hero .ph, .sy-home .zb-hero .ph { margin: 0; }
+.ld-home .zb-hero .ph-row, .sy-home .zb-hero .ph-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.ld-home .zb-hero .ph-title h1, .sy-home .zb-hero .ph-title h1 { margin: 0; color: #fff; font-size: 26px; font-weight: 800; letter-spacing: .04em; line-height: 1.25; }
+.ld-home .zb-hero .ph-title .chip, .sy-home .zb-hero .ph-title .chip { background: rgba(255, 255, 255, .16); color: #fff; }
+.ld-home .zb-hero .ph-title button, .sy-home .zb-hero .ph-title button { color: #dbe7ff; border-color: rgba(255, 255, 255, .5); }
+.ld-home .zb-hero .ph-meta, .sy-home .zb-hero .ph-meta { margin-top: 3px; font-size: 14.5px; color: #dbe7ff; letter-spacing: .04em; }
+.ld-home .zb-hero .ph-act .zb-chip, .sy-home .zb-hero .ph-act .zb-chip { background: rgba(255, 255, 255, .92); }
+.zb-kpi.ld-static { cursor: default; }
+.zb-kpi.ld-static:hover { border-color: var(--line); box-shadow: none; }
+.ld-home .r, .sy-home .r { text-align: right; }
+.ld-home b.red { color: var(--red); }
+
+/* 项目组合：一行一个项目；其他项目尚未接入时如实空态 */
+.ld-r2 { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); }
+.ld-r3 { grid-template-columns: minmax(0, 1fr) minmax(0, .8fr) minmax(0, 1.1fr); }
+.ld-pt, .ld-st, .sy-rt { width: 100%; border-collapse: collapse; }
+.ld-pt th, .ld-st th, .sy-rt th { padding: 5px 8px; background: var(--th); color: var(--ink3); font-size: 12.5px; font-weight: 600; text-align: left; white-space: nowrap; }
+.ld-pt td { padding: 8px; border-bottom: 1px solid var(--line2); font-size: 14px; vertical-align: middle; }
+.ld-pt td.r { white-space: nowrap; }
+.ld-pn b { display: block; color: var(--brand); font-weight: 700; line-height: 1.4; }
+.ld-pn small { font-size: 12px; color: var(--ink3); }
+.ld-none { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 10px; padding: 12px; border: 1px dashed var(--brand-line); border-radius: 8px; background: #f8fafd; color: var(--ink3); flex: 1; }
+.ld-none .ic { width: 26px; height: 26px; margin: 0; color: #9db6df; }
+.ld-none b { display: block; font-size: 14.5px; color: var(--ink2); }
+.ld-none small { font-size: 12.5px; }
+
+/* 需关注事项：每行一条，说明一行截断，完整内容在悬停提示 */
+.ld-note { padding: 0 2px 4px; }
+.ld-fi { display: flex; align-items: flex-start; gap: 10px; padding: 6px 2px; border-bottom: 1px dashed var(--line2); }
+.ld-fi:last-of-type { border-bottom: 0; }
+.ld-ft { flex: 1; min-width: 0; }
+.ld-ft b { display: block; font-size: 14px; font-weight: 700; color: var(--ink); line-height: 1.45; }
+.ld-ft small { display: block; font-size: 12.5px; color: var(--ink3); line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ld-fi .zb-link { flex: none; }
+
+/* 分包单位安全表 */
+.ld-st td { padding: 5px 8px; border-bottom: 1px solid var(--line2); font-size: 14px; }
+.ld-st td:first-child { font-weight: 600; color: var(--ink); }
+.ld-st-n { padding-top: 4px; }
+
+/* 总览所在的 main.wide 没有内边距，这里补上与其他页一致的边距 */
+.main.wide > .ld-home { padding: 14px 24px 4px; }
+/* 全屏展示：整页铺满，仍是同一套浅色组件 */
+.ld-home.full { position: fixed; inset: 0; z-index: 60; overflow: auto; padding: 16px 20px; background: var(--bg); }
+
+/* ---------- 系统概况 ---------- */
+.sy-r2 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.sy-r3 { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); }
+.sy-kv { display: flex; align-items: flex-start; gap: 10px; padding: 6px 2px; border-bottom: 1px solid var(--line2); font-size: 14px; line-height: 1.45; }
+.sy-kv:last-child { border-bottom: 0; }
+.sy-kv > .ic { width: 18px; height: 18px; margin: 1px 0 0; color: var(--brand-2); flex: none; }
+.sy-kv > span:first-of-type { flex: none; width: 70px; color: var(--ink3); }
+.sy-kv .sy-v { flex: 1; min-width: 0; color: var(--ink); }
+.sy-kv .sy-v small { display: block; font-size: 12px; color: var(--ink3); line-height: 1.4; }
+.sy-dot { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: var(--ink3); vertical-align: 1px; }
+.sy-dot.ok { background: var(--green); } .sy-dot.warn { background: var(--orange); } .sy-dot.bad { background: var(--red); }
+.sy-rt td { padding: 5px 8px; border-bottom: 1px solid var(--line2); font-size: 14px; }
+.sy-rt td:first-child { font-weight: 600; color: var(--ink); white-space: nowrap; }
+.sy-roles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 16px; }
+.sy-role { display: flex; align-items: baseline; gap: 8px; padding: 6px 2px; border-bottom: 1px solid var(--line2); font-size: 14px; min-width: 0; }
+.sy-role > b { color: var(--ink); font-weight: 600; white-space: nowrap; }
+.sy-role small { font-size: 12px; color: var(--ink3); }
+.sy-role span { margin-left: auto; font-size: 13px; color: var(--ink3); white-space: nowrap; }
+.sy-role span b { color: var(--brand); font-size: 14px; }
+.sy-flow { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: center; gap: 6px; padding: 2px 0 8px; }
+.sy-step { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 8px; background: var(--brand-soft); min-width: 0; }
+.sy-step .ic { width: 20px; height: 20px; margin: 0; color: var(--brand-2); flex: none; }
+.sy-step b { font-size: 13.5px; color: var(--ink); white-space: nowrap; }
+.sy-step small { display: none; }
+.sy-flow > .ic { width: 16px; height: 16px; margin: 0; color: var(--brand-2); }
+.sy-au { display: flex; gap: 8px; padding: 4px 2px; border-bottom: 1px dashed var(--line2); font-size: 13px; line-height: 1.5; }
+.sy-au:last-child { border-bottom: 0; }
+.sy-au time { flex: none; width: 76px; color: var(--ink3); font-size: 12px; }
+.sy-au span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink2); }
+.sy-au b { font-weight: 600; color: var(--ink); }
+.sy-qr { display: flex; align-items: center; gap: 8px; }
+.sy-qr .in { flex: 1; min-width: 0; }
+
+@media (min-width: 1441px) {
+  .sy-step small { display: block; font-size: 11.5px; color: var(--ink3); }
+}
+@media (min-width: 1101px) and (max-height: 820px) {
+  .ld-home, .sy-home { --gap: 9px; }
+  .ld-home .zb-hero .ph-title h1, .sy-home .zb-hero .ph-title h1 { font-size: 23px; }
+  .ld-home .zb-hero .ph-meta, .sy-home .zb-hero .ph-meta { font-size: 13.5px; margin-top: 2px; }
+  .ld-pt td { padding: 6px 8px; }
+  .ld-none { margin-top: 8px; padding: 8px; }
+  .ld-fi { padding: 4px 2px; }
+  .ld-r3 .zb-card, .sy-r3 .zb-card, .sy-r2 .zb-card { padding: 6px 14px 8px; }
+  .ld-st td, .sy-rt td { padding: 4px 8px; }
+  .sy-kv { padding: 4px 2px; }
+  .sy-au { padding: 3px 2px; }
+  .sy-role { padding: 4px 2px; }
+  .main.wide > .ld-home { padding-top: 10px; }
+}
+@media (max-width: 1280px) {
+  .sy-r2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sy-r2 > :last-child { grid-column: 1 / -1; }
+}
+@media (max-width: 1100px) {
+  .ld-r2, .sy-r3 { grid-template-columns: minmax(0, 1fr); }
+  .ld-r3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ld-r3 > :first-child { grid-column: 1 / -1; }
+}
+@media (max-width: 640px) {
+  .ld-home, .sy-home { --gap: 10px; }
+  .main.wide > .ld-home { padding: 10px 12px 96px; }
+  .sy-roles { grid-template-columns: minmax(0, 1fr); }
+  .ld-home .zb-hero, .sy-home .zb-hero { height: auto; min-height: 68px; }
+  .ld-home .zb-hero-tx, .sy-home .zb-hero-tx { position: relative; left: auto; right: auto; top: auto; transform: none; padding: 10px 14px; }
+  .ld-home .zb-hero .ph-title h1, .sy-home .zb-hero .ph-title h1 { font-size: 19px; }
+  .ld-home .zb-hero .ph-meta, .sy-home .zb-hero .ph-meta { font-size: 12.5px; }
+  .ld-home .zb-hero .ph-act, .sy-home .zb-hero .ph-act { display: none; }
+  .ld-r3, .sy-r2 { grid-template-columns: minmax(0, 1fr); }
+  .sy-r2 > :last-child, .ld-r3 > :first-child { grid-column: auto; }
+  .ld-r3 .zb-ch, .sy-fold .zb-ch { min-height: 44px; cursor: pointer; margin-bottom: 0; }
+  .ld-r3 .zb-ch::after, .sy-fold .zb-ch::after { content: "展开"; font-size: 12.5px; color: var(--link); margin-left: 6px; }
+  .ld-r3 .zb-card:not(.shut) .zb-ch::after, .sy-fold:not(.shut) .zb-ch::after { content: "收起"; }
+  /* 项目组合：每个项目一块，字段两列排 */
+  .ld-pt thead { display: none; }
+  .ld-pt, .ld-pt tbody { display: block; }
+  .ld-pt tr { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; padding: 8px 0; border-bottom: 1px solid var(--line2); }
+  .ld-pt td, .ld-pt td.r { display: block; padding: 0; border: 0; text-align: left; }
+  .ld-pt td.ld-pn, .ld-pt td[colspan] { grid-column: 1 / -1; }
+  .ld-pt tr.on td:nth-child(3)::before { content: "质量未闭环 "; color: var(--ink3); font-size: 12.5px; }
+  .ld-pt tr.on td:nth-child(4)::before { content: "安全未闭环 "; color: var(--ink3); font-size: 12.5px; }
+  .ld-pt tr.on td:nth-child(5)::before { content: "周记录产值 "; color: var(--ink3); font-size: 12.5px; }
+  .ld-pt tr.on td:nth-child(6)::before { content: "系统核定 "; color: var(--ink3); font-size: 12.5px; }
+  .ld-pt .zb-link, .ld-fi .zb-link, .sy-home .zb-link { min-height: 44px; }
+  .sy-qr { flex-wrap: wrap; }
+  .sy-qr .in { flex-basis: 100%; min-height: 44px; }
+  .sy-qr .btn { min-height: 44px; }
+  .sy-flow { grid-template-columns: 1fr; }
+  .sy-flow > .ic { transform: rotate(90deg); justify-self: center; }
+}

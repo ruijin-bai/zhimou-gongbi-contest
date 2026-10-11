@@ -1,0 +1,76 @@
+/* 其余页面改版（10-10）第 arch 批专用样式：只放本批页面的样式，共用组件在 x_v8.css */
+/* 资料台账（隐蔽验收 conceal、材料与砼 tickets、部位档案 sites、索赔证据包 claims、合同条款 contract、表格日志导入 xlsx）。
+   页面根节点都带 .ra；卡片用 zb-card，这里只补本批的排布、长页分区间距与手机改排。 */
+
+.ra section.zb-card.mb { margin-bottom: 12px; }
+.ra .zb-ch h2 { white-space: normal; }
+.ra-note { margin: 4px 2px 12px; line-height: 1.5; }
+.ra-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }
+
+/* 只读指标：沿用 zb-kpi 外观，但不是按钮 */
+.ra-kpis .zb-kpi { cursor: default; }
+.ra-kpis .zb-kpi:hover { border-color: var(--line); box-shadow: none; }
+
+/* 验收模板：两列卡片 */
+.ra-tpls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 8px; }
+
+/* 部位档案：卡片网格 */
+.xs-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.xs-q { max-width: 260px; }
+.xs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.xs-grid .xs-card { gap: 8px; }
+.xs-grid .xs-card .zb-ch { margin-bottom: 0; }
+.xs-grid .xs-card:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.xs-grid .xs-none { grid-column: 1 / -1; }
+.xs-filter { gap: 8px; align-items: center; }
+.xs-filter label { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.xs-filter .xs-date { width: 150px; }
+.xs-ev-tbl td.ra-act { min-width: 120px; }
+.xs-make .xs-title { max-width: 280px; }
+.xs-ck { width: 18px; height: 18px; }
+
+/* 合同条款 */
+.ct-q { display: flex; gap: 8px; }
+.ct-imp { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1.4fr); gap: 8px; align-items: center; }
+.ct-imp input[type=file] { min-width: 0; }
+
+/* 表格日志导入 */
+.xl-pick { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+@media (max-width: 860px) {
+  .ra-form, .ra-tpls { grid-template-columns: minmax(0, 1fr); }
+  .ra-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ct-imp { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* 手机：触控 ≥44px；表格改成一行一张卡片（每格前面写列名），不横向滚动 */
+@media (max-width: 640px) {
+  .ra .btn, .ra .seg button, .ra select.in, .ra input.in { min-height: 44px; }
+  .ra .seg { flex-wrap: wrap; }
+  .ra .zb-ch h2 { font-size: 16px; }
+  .ra .zb-ch > .tiny.muted { flex-basis: 100%; }
+  .ra-kpis .zb-kpi { height: auto; min-height: 72px; padding: 8px 12px; gap: 10px; }
+  .ra-kpis .zb-kpi-ic { width: 36px; height: 36px; }
+  .ra-kpis .zb-kpi-v { font-size: 24px; }
+  .ra-kpis .zb-kpi-l { font-size: 13.5px; }
+
+  .ra .scroll-x { overflow: visible; }
+  .ra-tbl, .ra-tbl tbody { display: block; width: 100%; }
+  .ra-tbl thead { display: none; }
+  .ra-tbl tr { display: block; padding: 8px 0; border-bottom: 1px solid var(--line2); }
+  .ra-tbl td { display: flex; gap: 10px; padding: 3px 0; border: 0; white-space: normal; text-align: left; }
+  .ra-tbl td[data-l]::before { content: attr(data-l); flex: none; width: 76px; color: var(--ink3); font-size: 12.5px; }
+  .ra-tbl td.ra-act { justify-content: flex-end; flex-wrap: wrap; }
+  .ra-tbl tr.xs-exrow td { display: block; }
+
+  .xs-q, .xs-make .xs-title { max-width: none; width: 100%; }
+  .xs-filter, .xs-filter label { width: 100%; }
+  .xs-filter .xs-date, .xs-filter .xs-sel { flex: 1; width: auto; }
+  .xs-grid { grid-template-columns: minmax(0, 1fr); }
+  .ct-q { flex-wrap: wrap; } .ct-q .btn { width: 100%; }
+  .xl-pick .btn { width: 100%; }
+}
+
+/* ---------- 一屏化（10-10） ---------- */
+/* 部位档案：卡片网格用 zb-paged 内部分页（电脑每页 12 个、手机 5 个），当前页在面板内滚动 */
+.xs .zb-pg-body.zb-fitted { padding: 2px 4px 2px 2px; }

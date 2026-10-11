@@ -1,0 +1,302 @@
+/* 工程主管、安全主管 · 智能管理台（x_enghome.js）。只补本页布局，组件外观一律用 x_v8.css 的 zb-*，不另做一套。
+   高度预算（视口高 ≤ 820，如 1366×768）：页头 78 · 指标 74 · 简报 38 · 领域摘要 ≈150 · 待我处理首屏起头；其后辅助分析允许滚动。
+   1440×900 舒展：页头 88 · 指标 80 · 简报 40 · 领域摘要 ≈160。 */
+.eh-home { --gap: 12px; display: flex; flex-direction: column; gap: var(--gap); }
+.eh-home .zb-hero { flex: none; }
+.eh-hero-btn { position: absolute; right: 22px; top: 50%; transform: translateY(-50%); background: rgba(255, 255, 255, .92); border-color: transparent; color: var(--brand); }
+.zb-kpis.n5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.zb-kpis.n5 .zb-kpi { gap: 10px; padding: 0 12px; }
+.zb-kpis.n5 .zb-kpi-ic { width: 38px; height: 38px; }
+.zb-kpis.n5 .zb-kpi-ic .ic { width: 20px; height: 20px; }
+.zb-kpis.n5 .zb-kpi-b { column-gap: 8px; }
+.zb-kpis.n5 .zb-kpi-go { display: none; }
+
+/* 今日简报一行 */
+.eh-brief { flex-direction: row; align-items: center; gap: 10px; padding: 7px 14px; min-height: 40px; }
+.eh-brief .zb-src { flex: none; }
+.eh-brief-t { flex: 1; min-width: 0; color: var(--ink2); font-size: 14px; line-height: 1.5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.eh-brief .zb-link { flex: none; }
+
+/* 领域摘要：进度 | 质量 | 安全提示 | 数据与依据 */
+.eh-r4 { grid-template-columns: minmax(0, 1.25fr) minmax(0, .9fr) minmax(0, 1.1fr); }   /* 进度 | 质量 | 安全提示（数据与依据已移出首页） */
+.eh-li { display: flex; gap: 8px; padding: 3px 0; font-size: 13.5px; line-height: 1.5; }
+.eh-k { flex: none; color: var(--ink3); font-size: 12.5px; line-height: 20px; }
+.eh-v { flex: 1; min-width: 0; color: var(--ink2); }
+.eh-v b { color: var(--ink); }
+.eh-v small { color: var(--ink3); font-size: 12px; }
+.eh-v .chip { margin-right: 4px; }
+.eh-v .lv-dot { display: inline-block; margin: 0 6px 1px 0; vertical-align: middle; }
+.eh-nums { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 2px 0 4px; }
+.eh-nums div { display: flex; flex-direction: column; align-items: center; gap: 1px; text-align: center; }
+.eh-nums b { font-size: 24px; line-height: 1.2; color: var(--brand); }
+.eh-nums .red b { color: var(--red); }
+.eh-nums span { font-size: 12px; color: var(--ink3); }
+.eh-tip .zb-foot > span { min-width: 0; }
+.eh-ln { display: flex; align-items: center; gap: 10px; padding: 4px 8px; margin-bottom: 5px; border: 1px solid var(--line2); border-radius: 8px; cursor: pointer; color: inherit; }
+.eh-ln:hover { border-color: var(--brand-line); background: #f8fbff; }
+.eh-ln:last-child { margin-bottom: 0; }
+.eh-ln > .ic { flex: none; width: 18px; height: 18px; margin: 0; color: var(--brand-2); }
+.eh-ln > .ic:last-child { width: 14px; height: 14px; color: var(--ink3); }
+.eh-ln span { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.35; }
+.eh-ln b { font-size: 13.5px; color: var(--ink); }
+.eh-ln small { font-size: 12px; color: var(--ink3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 待我处理 | 侧栏（分包单位 / AI 候选确认） */
+.eh-r2 { grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr); align-items: stretch; }
+.eh-r2.sd { grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); }
+.eh-side { display: flex; flex-direction: column; gap: var(--gap); min-width: 0; }
+.eh-todo .todo-board { border: 0; padding: 0; background: none; }
+.eh-todo .todo-bar { margin-top: -2px; }
+.eh-t { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.eh-t th { padding: 5px 8px; background: var(--th); color: var(--ink3); font-size: 12.5px; font-weight: 600; text-align: right; white-space: nowrap; }
+.eh-t td { padding: 6px 8px; border-bottom: 1px solid var(--line2); text-align: right; }
+.eh-t th:first-child, .eh-t td:first-child { text-align: left; }
+.eh-t + .tiny { margin-top: 6px; }
+.eh-extra .zb-link .zb-n { margin-left: 2px; }
+.eh-x { display: flex; gap: 8px; padding: 6px 0; border-top: 1px solid var(--line2); }
+
+/* AI 候选确认：照片横向 4:3 完整显示（contain），点开原图 */
+.eh-cg { padding: 6px 0; border-bottom: 1px solid var(--line2); }
+.eh-cg:last-of-type { border-bottom: 0; }
+.eh-cg-h { display: flex; gap: 12px; align-items: flex-start; }
+.zb-ph.eh-ph { width: 148px; }
+.eh-cg-b { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.eh-cg-t { display: flex; gap: 6px; align-items: baseline; font-size: 13.5px; line-height: 1.45; color: var(--ink); }
+.eh-cg-t span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.eh-cg-t .chip { flex: none; }
+.eh-cg-b .zb-btns { margin-top: 3px; }
+.eh-cg-x { margin-top: 8px; padding: 8px 10px; background: #f8fafd; border-radius: 8px; }
+
+/* 辅助分析（右侧栏里，待我处理旁边） */
+.eh-bars { max-height: 104px; }
+.eh-bk { padding: 4px 0; border-bottom: 1px dashed var(--line2); }
+.eh-bk:last-child { border-bottom: 0; }
+.eh-hb { display: grid; grid-template-columns: 64px minmax(0, 1fr) 26px; align-items: center; gap: 8px; padding: 3px 0; font-size: 13px; }
+.eh-hb span { color: var(--ink2); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.eh-hb i { height: 12px; border-radius: 3px; background: var(--brand-soft); overflow: hidden; }
+.eh-hb i b { display: block; height: 100%; background: var(--brand-2); border-radius: 3px; }
+.eh-hb em { font-style: normal; font-weight: 700; color: var(--ink); }
+
+/* ===== 一屏化（RJ 10-10）：领域摘要每行一句（全文悬停），待我处理面板内滚动，辅助分析合成页签卡 ===== */
+.eh-dom .eh-li { flex-wrap: nowrap; }
+.eh-dom .eh-v { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.eh-dom .eh-li.eh-wrap .eh-v { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.eh-ln { padding: 4px 8px; margin-bottom: 4px; }
+.eh-ln span { flex-direction: row; align-items: baseline; gap: 8px; }
+.eh-ln b { flex: none; }
+.eh-ln small { min-width: 0; }
+.eh-todo { min-height: 0; }
+.eh-todo-all { display: none; }
+.eh-todo-fit .todo-board { margin: 0; }
+.eh-tabs { min-width: 0; }
+.eh-tabs .zb-ch { flex-wrap: nowrap; }
+.eh-seg { display: flex; gap: 2px; padding: 2px; border-radius: 8px; background: #eef2f8; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.eh-seg::-webkit-scrollbar { display: none; }
+.eh-seg button { flex: none; display: inline-flex; align-items: center; gap: 4px; min-height: 28px; padding: 0 10px; border: 0; border-radius: 6px; background: none; font: inherit; font-size: 13.5px; color: var(--ink2); cursor: pointer; white-space: nowrap; }
+.eh-seg button b { font-size: 12px; font-weight: 600; color: var(--ink3); }
+.eh-seg button.on { background: #fff; color: var(--brand); font-weight: 700; box-shadow: 0 1px 3px rgba(19, 37, 77, .1); }
+.eh-seg button.on b { color: var(--brand); }
+.eh-tabs-m { white-space: nowrap; }
+.eh-tabs .zb-foot:empty, .eh-tabs .zb-foot:not(:has(.eh-extra)) { display: none; }
+.eh-bk-n { margin-bottom: 4px; }
+.eh-bk-t { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.eh-bk-s { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.eh-cg-sc { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.eh-cand .eh-cg { border-bottom: 0; }
+.zb-dw .eh-cg { border-bottom: 1px solid var(--line2); }
+.zb-dw .eh-cg-x { margin-top: 12px; }
+.zb-dw .zb-ph.eh-ph { width: 160px; }
+
+/* 低高度桌面（如 1366×768）：只收间距与装饰高度，摘要不减 */
+@media (min-width: 1101px) and (max-height: 820px) {
+  .eh-home { --gap: 9px; }
+  .eh-brief { min-height: 36px; padding: 5px 14px; }
+  .eh-li { padding: 2px 0; }
+  .eh-nums b { font-size: 22px; }
+  .eh-ln { padding: 3px 8px; margin-bottom: 4px; }
+  .eh-dom .zb-ch { min-height: 28px; }
+  .zb-ph.eh-ph { width: 128px; }
+  .eh-bars { max-height: 88px; }
+}
+
+/* 窄电脑：领域摘要两列，待我处理与侧栏上下排 */
+@media (max-width: 1280px) {
+  .eh-r4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .zb-kpis.n5 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 1100px) {
+  .eh-r2, .eh-r2.sd { grid-template-columns: minmax(0, 1fr); }
+}
+/* 手机：独立组织。标题、指标网格、简报、待我处理、AI 候选在前；领域摘要与辅助分析收起，标题行即 44px 触控区 */
+@media (max-width: 640px) {
+  .eh-home { --gap: 10px; }
+  .eh-home .zb-hero:has(.eh-hero-btn) { height: auto; min-height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px 8px 14px; }
+  .eh-home .zb-hero:has(.eh-hero-btn) .zb-hero-tx { position: static; transform: none; min-width: 0; }
+  .eh-hero-btn { position: static; transform: none; flex: none; min-height: 44px; }
+  .zb-kpis.n5 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .zb-kpis.n5 > :last-child { grid-column: 1 / -1; }
+  .eh-brief { flex-wrap: wrap; align-items: flex-start; }
+  .eh-brief-t { flex-basis: 100%; order: 3; white-space: normal; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+  .eh-brief .zb-link { margin-left: auto; min-height: 44px; }
+  .eh-r4 { grid-template-columns: minmax(0, 1fr); }
+  /* 手机顺序：AI 候选、待我处理 → 领域摘要（收起）→ 辅助分析（收起） */
+  .eh-r2, .eh-side { display: contents; }
+  .eh-cand { order: 1; }
+  .eh-todo { order: 2; }
+  .eh-r4 { order: 3; }
+  .eh-tabs { order: 4; }
+  .eh-r4 .zb-ch, .eh-tabs .zb-ch { min-height: 44px; margin-bottom: 0; }
+  .eh-r4 .zb-ch { cursor: pointer; }
+  .eh-r4 .zb-ch::after { content: "展开"; flex: none; font-size: 12.5px; color: var(--link); margin-left: 6px; }
+  .eh-r4 .zb-card:not(.shut) .zb-ch::after { content: "收起"; }
+  .eh-r4 .zb-card.shut, .eh-tabs.shut { padding-top: 1px; padding-bottom: 1px; }
+  .eh-r4 .zb-card.shut .zb-ch { flex-wrap: nowrap; }
+  .eh-r4 .zb-card.shut .zb-ch > .tiny, .eh-r4 .zb-card.shut .zb-ch > .zb-sys { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .eh-seg button { min-height: 40px; }
+  .eh-fold-t { flex: none; min-height: 44px; }
+  .eh-tabs-m { display: none; }
+  .eh-cg-h { flex-direction: column; }
+  .zb-ph.eh-ph { width: 100%; }
+  .eh-cg-b .zb-btns .btn, .eh-cg-b .zb-btns a, .eh-ln { min-height: 44px; }
+  .eh-extra .zb-link { min-height: 44px; }
+  .eh-hb { grid-template-columns: 72px minmax(0, 1fr) 26px; }
+}
+
+/* 手机：待我处理只摊开前 2 项（同一份数据），其余“查看全部”就地展开 */
+@media (max-width: 760px) {
+  .eh-todo-fit:not(.all) .todo-cards-list > :nth-child(n+3) { display: none; }
+  .eh-todo-all { display: block; }
+}
+
+/* 一屏化（续）：领域摘要压到约 110px（1366×768），待我处理表行收紧、零计数页签不占位 */
+@media (min-width: 1101px) {
+  .eh-dom .zb-ch { min-height: 28px; margin-bottom: 4px; }
+  .eh-dom .eh-li { padding: 1px 0; line-height: 1.55; }
+  .eh-dom .zb-foot { flex-wrap: nowrap; gap: 10px; padding-top: 2px; font-size: 13px; white-space: nowrap; }
+  .eh-nums { display: flex; gap: 14px; padding: 0 0 2px; }
+  .eh-nums div { flex-direction: row; align-items: baseline; gap: 4px; }
+  .eh-nums b { font-size: 20px; }
+  .eh-todo .todo-tabs { gap: 14px; }
+  .eh-todo .todo-tabs button.zero:not(.on) { display: none; }
+  .eh-todo .todo-tabs button { padding: 7px 0 6px; }
+  .eh-todo .todo-tools .tsearch { width: 120px; }
+  .eh-todo .todo-t th, .eh-todo .todo-t td { padding: 6px 8px; }
+  .eh-todo .todo-grp td { padding: 3px 8px; }
+  .eh-todo .tt-r { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .eh-todo .tt-b { min-width: 0; }
+  .eh-todo .todo-know { margin-top: 6px; padding-top: 6px; }
+}
+@media (min-width: 1101px) and (max-height: 820px) {
+  .eh-tall { display: none; }
+  .eh-dom { padding-top: 6px; padding-bottom: 6px; }
+}
+@media (max-width: 640px) {
+  /* 指标卡：只留名称与数字（副标题在电脑端与悬停提示里），一行 4 个（安全主管 5 个排 3 + 2） */
+  .eh-home .zb-kpis.n4 { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .eh-home .zb-kpis.n5 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .eh-home .zb-kpis.n5 > :last-child { grid-column: auto; }
+  .eh-home .zb-kpi { min-height: 60px; padding: 7px 8px; }
+  .eh-home .zb-kpi-s { display: none; }
+  .eh-home .zb-kpi-l { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .eh-home .zb-kpi-v { font-size: 20px; }
+  .eh-home .zb-hero { height: 60px; }
+  /* 简报：标签与刷新同一行，正文至多两行 */
+  .eh-brief .zb-src { min-width: 0; flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .eh-brief-t { -webkit-line-clamp: 2; }
+  .eh-brief .zb-link { min-height: 36px; }
+  /* AI 候选：照片缩在左侧（4:3 完整显示），条目在右 */
+  .eh-cand .eh-cg-h { flex-direction: row; gap: 10px; }
+  .eh-cand .zb-ph.eh-ph { width: 112px; }
+  .eh-cand .eh-cg-t { font-size: 13px; }
+  .eh-cand .eh-cg-t span:last-child { -webkit-line-clamp: 1; }
+  .eh-cand .zb-src { display: none; }
+  .eh-todo .todo-card .tiny.muted { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+}
+
+/* ===== 领导 · 项目总览（cockpit.js）一屏化：“其他项目尚未接入”收成一行空态，口径说明进小问号 ===== */
+.ld-home .ld-port .ld-none { flex: none; justify-content: flex-start; flex-wrap: wrap; gap: 4px 10px; margin-top: 8px; padding: 8px 12px; }
+.ld-home .ld-port .ld-none .ic { width: 18px; height: 18px; }
+.ld-home .ld-port .ld-none b { display: inline; font-size: 13.5px; }
+.ld-home .ld-port .ld-none small { min-width: 0; }
+/* main.wide 的 min-height: 100vh 从页头下方算起，会多出页头高度的空白滚动；总览页不需要它 */
+.main.wide:has(> .ld-home) { min-height: 0; }
+
+/* ===== 技术员 · 随手记与待办（tech.js TechHome）、分包安全员 · 今日安全（roles.js SafeHome）一屏化（RJ 10-10） =====
+   首屏 = 随手记/随手拍 + 最要紧的 2 项待办；其余待办“查看全部”就地展开；随手记只摊开最近 2 条，AI 追问给条数、点开回答。
+   电脑端分栏一屏：技术员三栏（记录｜今天的记录｜待办），安全员两栏（随手拍与指标｜待办），待办在 v-fit 面板内滚动。 */
+.zb-m-todo:not(.all) .todo-cards-list > :nth-child(n+3) { display: none; }
+.zb-m-todo:not(.all) .todo-board .row.mt:has(> a.small) { display: none; }   /* 待办组件自带的“显示全部”与本页“查看全部”重复 */
+.tech-home #m-notes:not(.all) .tsug { display: none; }
+.th-ask { display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--brand); font-weight: 600; }
+.th-ask .ic { width: 16px; height: 16px; margin: 0; }
+.zb-m-todo > .zb-m-more { border-top: 0; }
+@media (min-width: 1101px) {
+  .tech-home { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start;
+    grid-template-areas: "hero hero hero" "cap notes todo" "rec notes todo" "note note note"; grid-template-rows: auto auto 1fr auto; }
+  .tech-home > .zb-m-hero { grid-area: hero; }
+  .tech-home > .banner { grid-column: 1 / -1; grid-row: 1; align-self: end; position: relative; z-index: 1; }
+  .tech-home > .zb-m-cap { grid-area: cap; }
+  .tech-home > .zb-m-kpis { display: none; }   /* 电脑端三栏同屏：三个数已在“今天的记录”“待我处理”标题上，指标卡（手机上的跳转入口）不再重复 */
+  .tech-home > .zb-m-rec { grid-area: rec; }
+  .tech-home > #m-notes { grid-area: notes; }
+  .tech-home > #m-todo { grid-area: todo; }
+  .tech-home > .ai-note { grid-area: note; }
+  .tech-home .zb-m-cap { padding-bottom: 10px; }
+  .tech-home .cap-photo { height: 72px; }
+  .tech-home .cap-text { margin-top: 8px; }
+  .tech-home .zb-m-row { min-height: 0; padding: 6px 0; }
+  .tech-home .cap-hero .voice.big .mic { height: 72px; }
+  .tech-home .cap-hero .voice.big > .small, .tech-home .zb-m-s { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tech-home .zb-m-rec .zb-m-row > .grow { min-width: 0; }
+
+  .sh-home { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); align-items: start;
+    grid-template-areas: "hero hero" "snap todo" "kpis todo" "focus todo" "team todo" "note note"; grid-template-rows: auto auto auto auto 1fr auto; }
+  .sh-home > .zb-m-hero { grid-area: hero; }
+  .sh-home > .zb-m-snap { grid-area: snap; }
+  .sh-home > .zb-m-kpis { grid-area: kpis; }
+  .sh-home > #m-todo { grid-area: todo; }
+  .sh-home > .zb-card:nth-of-type(n) { min-width: 0; }
+  .sh-home > .ai-note { grid-area: note; }
+  .sh-home > .zb-card:not(.zb-m-snap):not(.zb-m-hero) { grid-column: 1; }
+  .sh-home { grid-template-areas: "hero hero" "snap todo" "kpis todo" "focus todo" "note note"; grid-template-rows: auto auto auto 1fr auto; }
+  .zb-m-todo, .zb-m-todo-b { min-width: 0; }
+  .zb-m-todo { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 14px 4px; }
+}
+.th-more { display: flex; border-top: 1px dashed var(--line2); }
+.th-more > .zb-m-more { flex: 1; width: auto; border-top: 0; }
+.th-more > .zb-m-more + .zb-m-more { border-left: 1px dashed var(--line2); flex: none; padding: 0 14px; }
+.th-more:empty { display: none; }
+.tech-home #m-notes:not(.all) .tnote .readrow > .grow { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tech-home .cap-hero .voice.big > .small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.zb-m-todo .todo-card .tiny.muted { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+@media (max-width: 1100px) {
+  .tech-home > .zb-m-kpis { display: none; }   /* 三个数已在“今天的记录”“待我处理”标题上，首屏留给随手记与待办 */
+  .tech-home .zb-m-rec .zb-m-s { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tech-home .zb-m-rec .zb-m-row > .grow { min-width: 0; }
+}
+@media (max-width: 640px) {
+  .tech-home .zb-m-cap > .zb-ch { display: none; }   /* 页头已是“随手记”，手机上记录卡不再重复标题 */
+  .tech-home .zb-m-cap .cap-hero { margin-top: 0; }
+}
+.main.wide:has(> .ld-home) > .run-note { padding: 0 24px; }
+@media (max-width: 640px) { .main.wide:has(> .ld-home) > .run-note { padding: 0 12px; } }
+@media (min-width: 1101px) { .eh-side > .eh-tabs { flex: 1; } }
+
+/* ===== 真实数据里很长的英文作业名、编码（fit_check --stress）：本批首页文字可在任意处折行，卡片横向裁切，不撑宽页面 ===== */
+.pm-home, .eh-home, .sy-home, .ld-home, .tech-home, .sh-home { overflow-wrap: anywhere; min-width: 0; }
+:is(.pm-home, .eh-home, .sy-home, .ld-home, .tech-home, .sh-home) :is(.zb-card, .zb-kpi, .zb-hero, .zb-m-todo) { overflow-x: clip; }
+:is(.pm-home, .eh-home, .sy-home, .ld-home, .tech-home, .sh-home) .zb-kpi-v { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.cap-hero > * { min-width: 0; }
+/* 系统概况页头的二级入口：扫码网址设置（部署配置，不是每天看） */
+.sy-home .zb-hero .sy-qr-a { color: #dbe7ff; font-size: 13px; }
+.sy-home .zb-hero .sy-qr-a:hover { color: #fff; text-decoration: underline; }
+.sy-home .zb-hero .sy-qr-a .sy-dot { margin-right: 4px; }
+@media (max-width: 640px) { .sy-home .zb-hero .sy-qr-a { min-height: 44px; } }
+.sh-team-a { color: #fff; text-decoration: underline; cursor: pointer; }
+@media (max-width: 640px) { .sh-team-a { display: inline-flex; align-items: center; min-height: 44px; } }
+/* 分包履约画像页顶部：各分包今日 · 本周（从工程主管首页移来） */
+.sp-today { margin-bottom: 12px; padding-top: 6px; padding-bottom: 6px; }
+.sp-today .zb-ch { border-bottom: 0; margin: 0; padding: 0; flex-wrap: nowrap; }
+.sp-today-m { min-width: 0; font-size: 13px; color: var(--ink3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sp-today .zb-link { flex: none; min-height: 32px; }
+@media (max-width: 640px) { .sp-today .zb-link { min-height: 44px; } .sp-today-m { display: none; } }

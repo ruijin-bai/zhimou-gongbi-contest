@@ -1,0 +1,12 @@
+/* x_nudge 样式：催办台。沿用全站中港蓝，不另设颜色。 */
+.ask-pin select.in { width: auto; padding: 3px 8px; font-size: 13px; }
+
+.cd-flow { gap: 6px; }
+.cd-gap { font-size: 12px; color: var(--ink3); }
+.cd-sent { padding: 5px 0; border-bottom: 1px solid #f1f3f6; }
+.cd-why { padding: 3px 0; }
+.cd-form { display: flex; flex-direction: column; gap: 10px; }
+.cd-f { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 14px; }
+.cd-f label { display: inline-flex; align-items: center; gap: 4px; }
+input.in.cd-n { width: 72px; } input.in.cd-t { width: 112px; }
+@media (max-width: 860px) { .cd-flow .chip { white-space: normal; } }

@@ -1,0 +1,29 @@
+data/
+.env
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.log
+.runtime/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.db.bak
+uploads/
+backups/
+.claude/worktrees/
+
+# 仿真素材（AI 生成照片等，不提交）
+sim_assets/
+
+# 按岗位截图输出
+role_shots/
+
+# 演示副本（tools/demo_copy.py 生成）
+data_demo/
+
+# 设计插件（impeccable）的本地配置与缓存
+.impeccable/

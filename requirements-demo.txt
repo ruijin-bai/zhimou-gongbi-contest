@@ -1,0 +1,3 @@
+# 演示实例（tools/demo_serve.py：进程级演示时钟）专用依赖；正式部署不需要。
+# python -m pip install -r requirements-demo.txt
+time-machine==3.5.1

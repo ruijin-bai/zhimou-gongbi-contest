@@ -1,0 +1,155 @@
+/* x_quick 样式：拍完即时反馈气泡、弱网待上传状态条、扫码上报管理页与 A4 海报。主色沿用中港蓝（--brand），不另设配色。 */
+
+/* ---- 拍完即时反馈气泡（camera.js 的 PhotoBubble） */
+.pfb-wrap { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 70; width: min(440px, calc(100vw - 24px)); display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.pfb { pointer-events: auto; background: #fff; border: 1px solid var(--line, #d9dee5); border-left: 1px solid var(--brand); border-radius: 12px; box-shadow: 0 6px 22px rgba(15, 42, 68, .22); padding: 10px 12px; animation: pfb-in .18s ease-out; }
+.pfb.hazard { border-left-color: var(--red, #d64545); }
+.pfb.clear { border-left-color: var(--green, #1e8e5a); }
+.pfb.fail { border-left-color: var(--orange, #e08a1e); }
+.pfb-h { display: flex; align-items: flex-start; gap: 8px; }
+.pfb-i { flex-shrink: 0; }
+.pfb-t { flex: 1; min-width: 0; font-size: 14px; line-height: 1.45; }
+.pfb-x { flex-shrink: 0; border: 0; background: transparent; color: var(--ink2, #5b6b7d); font-size: 16px; padding: 0 2px; cursor: pointer; }
+.pfb-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 13px; }
+.pfb-ft { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pfb-hint { margin-top: 6px; font-size: 12px; color: var(--ink2, #5b6b7d); }
+@keyframes pfb-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (min-width: 900px) { .pfb-wrap { left: auto; right: 24px; transform: none; bottom: 24px; } }
+
+/* ---- 弱网待上传状态条 */
+.qbar-wrap { position: fixed; right: 10px; top: 54px; z-index: 65; max-width: calc(100vw - 20px); display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.qbar { display: inline-flex; align-items: center; gap: 8px; background: var(--brand); color: #fff; font-size: 13px; padding: 6px 12px; border-radius: 999px; box-shadow: 0 3px 12px rgba(15, 42, 68, .25); cursor: pointer; }
+.qbar a { color: #fff; text-decoration: underline; cursor: pointer; }
+.qbar.warn { background: var(--orange, #e08a1e); }
+.qbar.ok { background: var(--green, #1e8e5a); }
+.qbar-dot { width: 8px; height: 8px; border-radius: 50%; background: #fff; opacity: .9; }
+.qbar.busy .qbar-dot { animation: qbar-pulse 1s infinite; }
+@keyframes qbar-pulse { 50% { opacity: .25; } }
+.qpanel { width: min(360px, calc(100vw - 20px)); max-height: 50vh; overflow: auto; background: #fff; border: 1px solid var(--line, #d9dee5); border-radius: 12px; box-shadow: 0 6px 22px rgba(15, 42, 68, .22); padding: 6px 10px; }
+.qrow { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line, #eef1f5); }
+.qrow:last-child { border-bottom: 0; }
+.qrow img, .qrow .qi { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--brand-soft); }
+.qrow .bad { color: var(--red, #d64545); }
+@media (min-width: 900px) { .qbar-wrap { top: 12px; right: 18px; } }
+
+/* ---- 扫码上报管理页 */
+.qsub { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line, #eef1f5); }
+.qsub:last-of-type { border-bottom: 0; }
+.qs-ph { display: grid; grid-template-columns: repeat(2, 64px); gap: 4px; flex-shrink: 0; align-content: start; }
+.qs-ph img { width: 64px; height: 64px; object-fit: cover; border-radius: 6px; cursor: zoom-in; }
+.qrow2 { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line, #eef1f5); align-items: flex-start; }
+.qrow2:last-of-type { border-bottom: 0; }
+.qthumb { width: 84px; height: 84px; flex-shrink: 0; cursor: pointer; border: 1px solid var(--line, #d9dee5); border-radius: 8px; overflow: hidden; background: #fff; }
+.qthumb svg { width: 100%; height: 100%; display: block; }
+.qthumb.off { background: repeating-linear-gradient(45deg, #f1f4f8, #f1f4f8 6px, #e6ebf1 6px, #e6ebf1 12px); cursor: default; }
+
+/* ---- A4 海报 */
+.qp-mask { position: fixed; inset: 0; z-index: 90; background: rgba(15, 42, 68, .72); overflow: auto; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.qp-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; color: #fff; }
+.qp-bar .btn:not(.primary) { color: var(--ink, #18212f); }
+.qp-sheet { background: #fff; width: 210mm; max-width: 100%; box-shadow: 0 8px 30px rgba(0, 0, 0, .35); }
+.qp-poster { box-sizing: border-box; min-height: 297mm; padding: 16mm 14mm; display: flex; flex-direction: column; align-items: center; text-align: center; color: #0f2a44; }
+.qp-brand { font-size: 5mm; color: var(--brand); letter-spacing: .5mm; }
+.qp-title { font-size: 13mm; font-weight: 600; margin-top: 8mm; line-height: 1.2; }
+.qp-sub { font-size: 5.2mm; margin-top: 4mm; color: #3b4a5c; }
+.qp-qr { width: 120mm; height: 120mm; margin-top: 10mm; border: .6mm solid #0f2a44; border-radius: 3mm; padding: 2mm; box-sizing: border-box; }
+.qp-qr svg { width: 100%; height: 100%; display: block; }
+.qp-label { font-size: 11mm; font-weight: 600; margin-top: 10mm; padding: 2mm 8mm; background: var(--brand); color: #fff; border-radius: 3mm; max-width: 100%; word-break: break-all; }
+.qp-foot { font-size: 4.2mm; margin-top: 8mm; color: #5b6b7d; }
+.qp-url { font: 3.4mm/1.4 ui-monospace, Menlo, Consolas, monospace; margin-top: 3mm; color: #7a8a9b; word-break: break-all; }
+
+@page { size: A4 portrait; margin: 0; }
+@media print {
+  body.qp-printing > #app { display: none !important; }
+  body.qp-printing > *:not(.qp-mask):not(script) { display: none !important; }
+  body.qp-printing .qp-mask { position: static; background: #fff; padding: 0; display: block; overflow: visible; }
+  body.qp-printing .qp-bar { display: none !important; }
+  body.qp-printing .qp-sheet { box-shadow: none; width: 210mm; }
+  body.qp-printing .qp-poster { height: 296mm; min-height: 0; overflow: hidden; page-break-inside: avoid; }
+  .pfb-wrap, .qbar-wrap { display: none !important; }
+}
+
+/* 上传确认（拍完选是否 AI 识别）：手机上贴底的面板，开关够大、单手可点 */
+.pc { padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); }
+.pc-th { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 6px; margin: 10px 0 12px; max-height: 32vh; overflow: auto; }
+.pc-th img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; background: #e6edf5; }
+.pc-opt { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--line, #d9dee5); border-radius: 10px; cursor: pointer; user-select: none; }
+.pc-opt.on { border-color: var(--brand); background: var(--brand-soft, #e6f0fa); }
+.pc-opt input { position: absolute; opacity: 0; pointer-events: none; }
+.pc-sw { flex-shrink: 0; width: 46px; height: 26px; border-radius: 13px; background: #b8c2cf; position: relative; transition: background .15s; }
+.pc-sw i { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .15s; }
+.pc-opt.on .pc-sw { background: var(--brand); }
+.pc-opt.on .pc-sw i { transform: translateX(20px); }
+.pc-d { display: block; margin-top: 2px; }
+.pc-voice { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 12px; margin-bottom: 10px; border: 1px dashed var(--line, #d9dee5); border-radius: 10px; }
+.pc-voice .pc-vi { color: var(--brand); }
+.pc .pc-voice .btn { min-height: 36px; padding: 0 12px; font-size: 14px; }
+.pc .btn { min-height: 44px; padding: 0 22px; font-size: 16px; }
+@media (max-width: 860px) { .pc-bg { align-items: flex-end; padding: 0; } .pc { width: 100%; border-radius: 16px 16px 0 0; } }
+
+/* ======================================================================
+   一线手机首页（RJ 10-10 设计 17/18，线程 E）：技术员随手记、分包安全员随手拍。
+   复用 x_v8.css 的 zb-* 组件；这里只放手机专用的排布，统一挂在 .zb-m 下，优先级高于旧皮肤。
+   单列；短横幅；指标三格；触控目标 ≥ 44px；底栏留出 tabbar 高度，不遮页面末尾操作。
+   ====================================================================== */
+.zb-m { --gap: 10px; display: flex; flex-direction: column; gap: var(--gap); padding-bottom: 8px; }
+.zb-m > * { margin-top: 0 !important; }
+.zb-m .zb-m-hero { background: linear-gradient(90deg, rgba(14, 36, 92, .95) 0%, rgba(24, 58, 134, .82) 50%, rgba(24, 58, 134, .2) 100%), url(/static/brand/hero-bridge.jpg) center 40% / cover no-repeat; }
+.zb-m .zb-hero-sub { overflow-wrap: anywhere; }
+.zb-m .zb-card { box-shadow: 0 1px 3px rgba(19, 37, 77, .04); }
+.zb-m .zb-ch h2 { font-size: 16.5px; }
+.zb-m .zb-kpi { min-height: 64px; cursor: pointer; }
+.zb-m .zb-kpi-v { font-size: 26px; }
+/* 采集区：说一句（主）+ 拍一张，下面一行打字 */
+.zb-m .zb-m-cap .cap-hero { margin-top: 4px; }
+.zb-m .cap-photo { height: 84px; }
+.zb-m .cap-text { margin-top: 10px; }
+.zb-m .cap-text .in, .zb-m .cap-text .btn { min-height: 44px; }
+.zb-m .cap-text .in { font-size: 16px; }
+/* 今天的记录：行内小按钮放大到 44px 触控区 */
+.zb-m .tnote .readrow { align-items: center; gap: 6px; padding: 6px 0; }
+.zb-m .tnote .btn.sm, .zb-m .tnote a.tiny { min-height: 44px; min-width: 44px; display: inline-flex; align-items: center; justify-content: center; }
+.zb-m .tnote img { width: 44px !important; height: 44px !important; }
+.zb-m .tsug .btn, .zb-m .tsug .in, .zb-m .tsug select, .zb-m .tsug .opt { min-height: 44px; }
+.zb-m .tsug a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 4px; }
+/* 本周确认、日志、导入：每行一个动作 */
+.zb-m .zb-m-rec { padding-top: 4px; padding-bottom: 4px; }
+.zb-m-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; min-height: 56px; }
+.zb-m-row + .zb-m-row { border-top: 1px solid var(--line2); }
+.zb-m-go { cursor: pointer; }
+.zb-m-go > .ic { flex: none; color: var(--ink3); }
+.zb-m-t { font-size: 15px; font-weight: 700; color: var(--ink); }
+.zb-m-s { font-size: 12.5px; color: var(--ink3); line-height: 1.45; }
+.zb-m .zb-btns { flex: none; }
+.zb-m .zb-btns .btn, .zb-m .zb-btns a, .zb-m-row > .btn { min-height: 44px; display: inline-flex; align-items: center; }
+.zb-m .zb-btns a { padding: 0 8px; }
+/* 待办（共用 TodoMobile）：标题与卡片按钮在手机上满足 44px */
+.zb-m .todo-mobile { margin-top: 0; }
+.zb-m .todo-mobile .btn, .zb-m .todo-mobile a.small, .zb-m .todo-mobile .seg button, .zb-m .todo-mobile .in { min-height: 44px; }
+.zb-m .todo-mobile a.small { display: inline-flex; align-items: center; padding: 0 6px; }
+.zb-m .ai-note, .zb-m .run-note { margin-top: 4px; }
+/* 手机首页内所有按钮、输入框统一 ≥ 44px（盖过 x_ui.css 的一线 .btn.sm 38px 与 todo.css 的 38px） */
+.shell[data-role] .main .zb-m .btn.btn, .shell[data-role] .main .zb-m .in.in, .shell[data-role] .main .zb-m select.in, .shell[data-role] .main .zb-m .opt.opt { min-height: 44px; }
+.zb-m .todo-mobile .seg button, .zb-m .todo-mobile [class*="filter"] button { min-height: 44px; }
+.zb-m-more { width: 100%; min-height: 44px; border: 0; border-top: 1px dashed var(--line2); background: none; color: var(--link); font: inherit; font-size: 13.5px; cursor: pointer; }
+/* 分包安全员：随手拍按钮放在白卡里；巡查提示、本单位人员默认收起，标题行即 44px 触控区 */
+.zb-m .zb-m-snap { padding: 10px; }
+.zb-m .zb-m-snap .btn.cta { min-height: 76px; flex-direction: column; gap: 2px; font-size: 18px; font-weight: 700; border-radius: 12px; }
+.zb-m .zb-m-snap .btn.cta .tiny { font-size: 12.5px; font-weight: 400; opacity: .9; white-space: normal; }
+.zb-m .zb-m-fold { min-height: 44px; cursor: pointer; margin-bottom: 0; }
+.zb-m .zb-card.shut .zb-ch { border-bottom: 0; padding-bottom: 0; }
+.zb-m .zb-card.shut .zb-body { display: none; }
+.zb-m-tg { font-size: 13px; color: var(--link); }
+.zb-m .todo-mobile .todo-tabs button { min-height: 44px; }
+.zb-m .todo-mobile .tfilter { min-height: 44px; padding: 0 14px; border-radius: 22px; font-size: 13px; }
+/* 手机横幅里沿用唯一页头组件（PageHead：标题 + 用途小问号 + 演示日），白字压在装饰图上 */
+.zb-m .zb-m-hero { height: auto; min-height: 72px; display: flex; align-items: center; padding: 10px 14px; }
+.zb-m .zb-m-hero .ph { margin: 0; padding: 0; border: 0; background: none; width: 100%; }
+.zb-m .zb-m-hero .ph-row { margin: 0; }
+.zb-m .zb-m-hero .ph-title { gap: 6px; flex-wrap: wrap; }
+.zb-m .zb-m-hero .ph-title h1 { margin: 0; color: #fff; font-size: 21px; font-weight: 800; letter-spacing: .04em; line-height: 1.25; }
+.zb-m .zb-m-hero .ph-meta { margin-top: 2px; font-size: 13px; color: #dbe7ff; overflow-wrap: anywhere; }
+.zb-m .zb-m-hero .ph-title .chip { background: rgba(255, 255, 255, .18); color: #fff; }
+.zb-m .zb-m-hero help-tip, .zb-m .zb-m-hero .help-tip { color: #dbe7ff; }
+.zb-m .zb-m-hero .htip-b { position: relative; color: #d6e8f8; }
+.zb-m .zb-m-hero .htip-b::before { content: ""; position: absolute; inset: -13px; }   /* 小问号视觉 18px，点按区扩到 44px */
