@@ -88,10 +88,11 @@ const GongbiHome = {
 // 例会分区（#/meetings，原“例会行动项”页的地址不变）：x_cmd.js 注册路由时若有本组件就用它
 const MeetHub = { components: { GongbiHome }, template: `<gongbi-home cat="meet"></gongbi-home>` };
 
-// 右栏：可引用事实（当前台账数，不是文书里冻结的数）、例会行动项、相关资料、起草规则。链接只给本岗位能打开的页面
+// 右栏：可引用事实（当前台账数，不是文书里冻结的数）、例会行动项、相关资料、起草规则。链接只给本岗位能打开的页面；
+// 已确认进度预警、质量/安全台账在“可引用事实”数字卡上已有入口（带筛选），相关资料不再重复列（验收 I4）
 const GB_SRC = {
-  period: [["已确认进度预警", "progress", { tab: "alerts" }], ["预测与赶工", "progress", { tab: "forecast" }], ["质量台账", "quality"], ["安全台账", "safety"]],
-  event: [["已确认进度预警", "progress", { tab: "alerts" }], ["部位档案与索赔证据", "claims"], ["预测与赶工", "progress", { tab: "forecast" }]],
+  period: [["预测与赶工", "progress", { tab: "forecast" }], ["质量台账", "quality"], ["安全台账", "safety"]],
+  event: [["部位档案与索赔证据", "claims"], ["预测与赶工", "progress", { tab: "forecast" }]],
   sub: [["质量台账", "quality"], ["安全台账", "safety"], ["开工条件", "gate"]],
 };
 const GbSide = {
@@ -117,7 +118,7 @@ const GbSide = {
       const k = (this.cp && this.cp.kpis) || {}, q = k.quality || {}, s = k.safety || {}, a = { red: 0, orange: 0, yellow: 0, all: 0 };
       for (const x of this.alerts || []) { a[x.level] = (a[x.level] || 0) + 1; a.all++; }
       return [
-        { k: "p", label: "已确认进度预警", v: this.alerts ? a.all : "—", tone: a.red ? "red" : "", route: "progress", params: { tab: "alerts" },
+        { k: "p", label: "已确认进度预警", v: this.alerts ? a.all : "—", tone: a.red ? "red" : "", route: "progress", params: { tab: "alerts", status: "confirmed" },
           sub: this.alerts ? `其中红 ${a.red}` + (a.orange ? ` · 橙 ${a.orange}` : "") + (a.yellow ? ` · 黄 ${a.yellow}` : "") : "未取到" },
         { k: "q", label: "质量问题未闭环", v: q.open == null ? "—" : q.open, tone: q.overdue ? "red" : q.open === 0 ? "green" : "", route: "quality", params: {}, sub: q.overdue ? `超期 ${q.overdue}` : "当前台账" },
         { k: "s", label: "安全隐患未闭环", v: s.open == null ? "—" : s.open, tone: s.overdue ? "orange" : s.open === 0 ? "green" : "", route: "safety", params: {}, sub: `高风险 ${s.high || 0} · 超期 ${s.overdue || 0}` },
@@ -158,18 +159,20 @@ const GongbiPanel = {
     <load-state compact v-if="err || !loaded" :loading="!loaded" :error="err" @retry="load"></load-state>
     <template v-else-if="items.length">
       <section class="zb-card gb-vers"><div class="zb-ch"><ic n="clipboard"></ic><h2>{{ type.can_draft ? '已起草' : '可查看' }}</h2><span class="zb-n">{{ items.length }}</span></div>
-        <zb-paged :items="items" :size="VERS" unit="份" :fit="false"><template #default="{ item: d }"><button type="button" :class="['gb-v', {on: d.id === sel}]" :aria-current="d.id === sel ? 'true' : null" @click="sel = d.id">
+        <zb-paged :items="items" :size="VERS" unit="份" :fit="false"><template #default="{ item: d }"><button type="button" :class="['gb-v', {on: d.id === sel}]" :aria-current="d.id === sel ? 'true' : null" @click="sel = d.id; reading = true">
           <span class="gb-vt">{{ d.title }}</span>
           <span class="gb-vc"><span :class="['chip', d.status === 'confirmed' ? 'green' : '']">{{ d.status === 'confirmed' ? (sub ? '已下发' : '已确认') : '草稿' }}</span><span class="chip">第 {{ d.version }} 版</span>
-            <span :class="['chip', d.warnings ? 'orange' : 'green']">核对 · {{ d.warnings ? d.warnings + ' 处待核' : '通过' }}</span></span>
+            <span :class="['chip', d.warnings ? 'orange' : d.fallback ? '' : 'green']" :title="d.fallback ? 'AI 稿有 ' + d.fallback + ' 个栏目数字对不上，已换成规则版文字' : ''">核对 · {{ d.warnings ? d.warnings + ' 处待核' : d.fallback ? d.fallback + ' 栏换规则版' : '通过' }}</span></span>
           <span class="gb-vm">{{ d.source === 'ai' ? 'AI 起草' : '规则版文字' }} · {{ fmtDT(d.created_at) }}</span></button></template></zb-paged></section>
-      <div class="rp-detail gb-detail" v-if="sel"><gongbi-doc :id="sel" :key="sel" @changed="load"></gongbi-doc></div></template>
+      <zb-drawer wide v-if="sel && reading" :title="selTitle" @close="reading = false"><div class="gb-detail gb-read"><gongbi-doc :id="sel" :key="sel" @changed="load"></gongbi-doc></div></zb-drawer></template>
     <section class="zb-card gb-none" v-else><span class="gb-none-ic"><ic n="edit"></ic></span><b>{{ type.can_draft ? '尚未起草' : '暂无可查看的文书' }}</b><p>{{ emptyReason }}</p>
       <div class="gb-recent" v-if="recent && recent.length"><div class="gb-rh">最近文书</div>
         <button v-for="x in recent" :key="x.key" type="button" class="gb-rr" @click="$emit('open', x)"><ic n="file"></ic><span class="gb-rt"><b>{{ x.title }}</b><small>{{ x.type }} · {{ fmtDT(x.at) }}</small></span>
           <span class="gb-vc"><span :class="['chip', x.ok ? 'green' : '']">{{ x.ok ? x.okText : '草稿' }}</span><span class="chip orange" v-if="x.warn">{{ x.warn }}</span></span><ic n="chevron"></ic></button></div></section></div>`,
-  data: () => ({ items: [], refs: [], ref: "", busy: false, sec: 0, loaded: false, err: null, sel: null, VERS: 4 }),
+  // 一屏化（验收 I15）：选中的文书在右侧宽抽屉里阅读、核对、确认，不再接在列表下方把整页拉长
+  data: () => ({ items: [], refs: [], ref: "", busy: false, sec: 0, loaded: false, err: null, sel: null, reading: false, VERS: 4 }),
   computed: {
+    selTitle() { const d = this.items.find((x) => x.id === this.sel); return d ? d.title : "文书"; },
     refKind() { return this.type.ref; },
     sub() { return this.kind === "work_contact" || this.kind === "letter_to_sub"; },
     refHint() { return { event: "选择延误事件（按通知时效排序）", source: "选择已确认的隐患、质量问题或属实预警", company: "选择分包单位与问题类别" }[this.refKind] || "选择对象"; },
@@ -198,13 +201,13 @@ const GongbiPanel = {
       try {
         this.items = await GET("/api/gongbi/docs?kind=" + this.kind); this.loaded = true;
         const want = this.preset && this.preset.doc ? Number(this.preset.doc) : null;
-        if (want && this.items.some((d) => d.id === want)) this.sel = want;
+        if (want && this.items.some((d) => d.id === want)) { this.sel = want; this.reading = true; }
         else if (!this.items.some((d) => d.id === this.sel)) this.sel = this.items.length ? this.items[0].id : null;
       } catch (e) { this.err = e; }
     },
     async make() {
       this.busy = true; this.sec = 0; const t = setInterval(() => this.sec++, 1000);
-      try { const d = await POST("/api/gongbi/docs", { kind: this.kind, ref: this.ref }); toast(d.note ? "已起草：" + d.note : "已起草，请人工核对"); await this.load(); this.sel = d.id; this.$emit("changed"); }
+      try { const d = await POST("/api/gongbi/docs", { kind: this.kind, ref: this.ref }); toast(d.note ? "已起草：" + d.note : "已起草，请人工核对"); await this.load(); this.sel = d.id; this.reading = true; this.$emit("changed"); }
       catch (e) { toast(e.message, true); } finally { clearInterval(t); this.busy = false; }
     },
   },
@@ -229,13 +232,14 @@ const GongbiDoc = {
         <label class="tiny" v-if="d.can_confirm"> <input type="checkbox" v-model="ok[n.field + n.number + n.issue]">已核实</label></span></div>
     <div class="card" v-for="sec in d.template.sections" :key="sec.key">
       <div class="row between"><h2>{{ sec.title }}</h2><span class="tiny muted" v-if="sec.type === 'narrative' && d.can_edit">{{ (nar[sec.key] || '').length }}/{{ sec.max_chars }}</span></div>
-      <template v-if="d.can_edit"><div class="tiny muted mb">写作要求：{{ sec.instruction }}<template v-if="d.fallback.includes(sec.key)"> · <b>本栏 AI 稿数字核对未通过，已换成规则版</b></template></div>
+      <template v-if="d.can_edit"><div class="tiny muted mb">写作要求：{{ sec.instruction }}<template v-if="d.fallback.includes(sec.key)"> · <b>本栏 AI 稿数字与系统事实对不上，已换成规则版文字</b></template></div>
         <textarea v-if="sec.type === 'narrative'" class="in" :rows="sec.max_chars > 400 ? 5 : 3" v-model="nar[sec.key]"></textarea>
         <textarea v-else class="in" rows="2" v-model="lists[sec.key]" placeholder="每行一条"></textarea></template>
       <template v-else><p class="rv-p" v-if="sec.type === 'narrative'" v-html="prose(sec.key, nar[sec.key])"></p>
         <ol class="rv-ol" v-else-if="listItems(sec.key).length"><li v-for="(x, i) in listItems(sec.key)" :key="i">{{ x }}</li></ol><p class="muted small" v-else>无</p></template>
-      <div class="scroll-x mt" v-if="d.tables[sec.key] && d.tables[sec.key].rows.length"><table class="t"><thead><tr><th v-for="h in d.tables[sec.key].headers" :key="h">{{ h }}</th></tr></thead>
-        <tbody><tr v-for="(row, i) in d.tables[sec.key].rows" :key="i"><td v-for="(c, j) in row" :key="j">{{ c }}</td></tr></tbody></table></div></div>
+      <div class="scroll-x mt" v-if="d.tables[sec.key] && d.tables[sec.key].rows.length"><zb-paged tag="table" cls="t" :items="d.tables[sec.key].rows" :size="10" :m-size="6" unit="行" :fit="false">
+        <template #head><thead><tr><th v-for="h in d.tables[sec.key].headers" :key="h">{{ h }}</th></tr></thead></template>
+        <template #default="{ item: row }"><tr><td v-for="(c, j) in row" :key="j">{{ c }}</td></tr></template></zb-paged></div></div>
     <div class="tiny muted gb-foot"><help-tip caption="数字与文字从哪来" text="表格数字由系统直接填写；文字由交融大模型起草，数字逐个与系统事实核对，核对不过的栏目退回规则版文字。确认后冻结，再次起草即为新版本。"></help-tip></div></div>
     <load-state v-else loading :error="err" @retry="load"></load-state>`,
   data: () => ({ d: null, err: null, nar: {}, lists: {}, ok: {} }),
@@ -301,14 +305,16 @@ const LettersPage = {
           <div class="gb-form" v-if="v.can_review"><div class="small mb">接受回复只代表收到措施，<b>不改任何进度数据</b>；预警是否解除仍由 P6 和日志计算决定。</div>
             <div class="row wrap"><button class="btn primary" @click="review(true)">接受回复（销项）</button><input class="in" style="max-width:260px" v-model.trim="reason" placeholder="退回原因（退回时必填）"><button class="btn" :disabled="!reason" @click="review(false)">退回</button></div></div>
           <div class="tiny muted mt" v-if="v.area !== 'progress' && v.status !== 'closed'">安全、质量类按整改单的整改复核闭环，整改单闭环后本联系单自动销项。</div></div>
-        <div class="rp-detail gb-detail" v-if="!isSub"><gongbi-doc :id="v.doc.id" :key="v.doc.id"></gongbi-doc></div>
-        <div v-else class="zb-card gb-read"><div class="zb-ch"><ic n="file"></ic><h2 class="rd-wrap">{{ v.doc.title }}</h2></div><div v-for="sec in v.doc.template.sections" :key="sec.key" class="gb-rs"><b>{{ sec.title }}</b>
+        <div class="zb-card gb-act"><button class="btn" type="button" @click="docOpen = true"><ic n="file"></ic>{{ isSub ? '查看来函全文' : '查看文书正文' }}</button><span class="tiny muted"> {{ v.doc.title }}</span></div>
+        <zb-drawer wide v-if="!isSub && docOpen" :title="v.doc.title" @close="docOpen = false"><div class="gb-detail gb-read"><gongbi-doc :id="v.doc.id" :key="v.doc.id"></gongbi-doc></div></zb-drawer>
+        <zb-drawer wide v-if="isSub && docOpen" :title="v.doc.title" @close="docOpen = false"><div class="gb-read"><div v-for="sec in v.doc.template.sections" :key="sec.key" class="gb-rs"><b>{{ sec.title }}</b>
           <p v-if="sec.type === 'narrative'">{{ v.doc.narrative[sec.key] }}</p><ol v-else><li v-for="(x, i) in v.doc.narrative[sec.key] || []" :key="i">{{ x }}</li></ol>
-          <div class="scroll-x" v-if="v.doc.tables[sec.key] && v.doc.tables[sec.key].rows.length"><table class="t rv-t"><thead><tr><th v-for="h in v.doc.tables[sec.key].headers" :key="h">{{ h }}</th></tr></thead>
-            <tbody><tr v-for="(row, i) in v.doc.tables[sec.key].rows" :key="i"><td v-for="(c, j) in row" :key="j" :data-l="v.doc.tables[sec.key].headers[j]" :class="{nw: String(c).length <= 12}">{{ c }}</td></tr></tbody></table></div></div></div></div></div>
+          <div class="scroll-x" v-if="v.doc.tables[sec.key] && v.doc.tables[sec.key].rows.length"><zb-paged tag="table" cls="t rv-t" :items="v.doc.tables[sec.key].rows" :size="10" :m-size="5" unit="行" :fit="false">
+            <template #head><thead><tr><th v-for="h in v.doc.tables[sec.key].headers" :key="h">{{ h }}</th></tr></thead></template>
+            <template #default="{ item: row }"><tr><td v-for="(c, j) in row" :key="j" :data-l="v.doc.tables[sec.key].headers[j]" :class="{nw: String(c).length <= 12}">{{ c }}</td></tr></template></zb-paged></div></div></div></zb-drawer></div></div>
     <section class="zb-card" v-else-if="loaded"><div class="zb-ch"><ic n="send"></ic><h2>{{ isSub ? '来函' : '已下发' }}</h2><span class="zb-n">0</span></div>
       <div class="zb-empty"><empty-state compact :reason="(isSub ? '暂无项目部来函' : '暂无致分包文书') + '。项目部下发工作联系单或函件后，会出现在这里和你的待办里。'"></empty-state></div></section></div>`,
-  data: () => ({ items: [], sel: null, v: null, loaded: false, err: null, reply: "", finish: "", reason: "" }),
+  data: () => ({ items: [], sel: null, v: null, loaded: false, err: null, reply: "", finish: "", reason: "", docOpen: false }),
   computed: { isSub() { return ["tech", "sub_safety"].includes(roleOf()); }, openN() { return this.items.filter((x) => x.status !== "closed").length; } },
   mounted() { this.load(); },
   methods: {
@@ -322,7 +328,7 @@ const LettersPage = {
         this.pick(this.items.some((x) => x.id === want) ? want : this.sel && this.items.some((x) => x.id === this.sel) ? this.sel : this.items.length ? this.items[0].id : null);
       } catch (e) { this.err = e; }
     },
-    async pick(id) { this.sel = id; this.v = null; this.reply = ""; this.reason = ""; if (id) { try { this.v = await GET("/api/gongbi/letters/" + id); } catch (e) { toast(e.message, true); } } },
+    async pick(id) { this.sel = id; this.v = null; this.docOpen = false; this.reply = ""; this.reason = ""; if (id) { try { this.v = await GET("/api/gongbi/letters/" + id); } catch (e) { toast(e.message, true); } } },
     async act(fn, msg) { try { this.v = await fn(); toast(msg); this.items = await GET("/api/gongbi/letters"); } catch (e) { toast(e.message, true); } },
     ack() { return this.act(() => POST(`/api/gongbi/letters/${this.sel}/ack`), "已签收"); },
     send() { return this.act(() => POST(`/api/gongbi/letters/${this.sel}/reply`, { text: this.reply, finish_date: this.finish }), "已提交回复"); },

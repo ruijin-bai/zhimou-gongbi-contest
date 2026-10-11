@@ -203,7 +203,7 @@ def test_pm_items_whitelist_and_need_to_know_line(world):
     k = d["know"]
     assert k and k["n"] == sum(p["n"] for p in k["parts"]) and k["n"] >= 2
     routes = {p["route"] for p in k["parts"]}
-    assert "progress?tab=alerts" in routes and "safety" in routes
+    assert "progress?tab=alerts&status=open" in routes and "safety?only=high" in routes   # 带筛选进入（验收 I4）
     text = "需要知道 " + " ".join(p["label"] for p in k["parts"])
     assert brief.scope_ok(text) and not PM_BAD.search(text)
     for name in ("张工", "李工", "安全员甲", "安全员乙"):                       # 不出现人名（岗位名不算人名）
@@ -220,7 +220,7 @@ def test_pm_overview_counts_only_decisions(world):
     labels = [o["label"] for o in d["overview"]]
     assert labels == ["今日新增问题", "待我拍板", "超期隐患", "待确认红橙预警"]
     assert d["overview"][1]["value"] == d["total"]
-    alerts_part = next(p for p in d["know"]["parts"] if p["route"] == "progress?tab=alerts")
+    alerts_part = next(p for p in d["know"]["parts"] if p["route"] == "progress?tab=alerts&status=open")
     assert d["overview"][3]["value"] == alerts_part["n"]
 
 
@@ -258,7 +258,7 @@ def test_pm_alerts_only_confirmed_red_become_crash_items(world):
     crash = _src(d, "crash")
     assert [i["id"] for i in crash] == [f"crash:{world['aid_conf']}"]
     assert crash[0]["tone"] == "red" and crash[0]["action_route"] == f"alert?id={world['aid_conf']}"
-    alerts_part = next(p for p in d["know"]["parts"] if p["route"] == "progress?tab=alerts")
+    alerts_part = next(p for p in d["know"]["parts"] if p["route"] == "progress?tab=alerts&status=open")
     with closing(dbmod.connect()) as conn:
         n_open = conn.execute("SELECT COUNT(*) n FROM alerts WHERE project_id=? AND status='open' AND rule<>'stale' AND level IN ('red','orange')", (pid,)).fetchone()["n"]
     assert alerts_part["n"] == n_open >= 2
@@ -268,7 +268,7 @@ def test_pm_alerts_only_confirmed_red_become_crash_items(world):
     assert eng.post(f"/api/alerts/{world['aid_open']}/feedback", json={"status": "confirmed", "note": ""}).status_code == 200
     d2 = _get(login("pm"))
     assert f"crash:{world['aid_open']}" in {i["id"] for i in _src(d2, "crash")}
-    assert next(p for p in d2["know"]["parts"] if p["route"] == "progress?tab=alerts")["n"] == n_open - 1
+    assert next(p for p in d2["know"]["parts"] if p["route"] == "progress?tab=alerts&status=open")["n"] == n_open - 1
 
 
 def test_pm_escalated_hazards(world):
@@ -284,7 +284,7 @@ def test_pm_escalated_hazards(world):
     with closing(dbmod.connect()) as conn:                                   # 责任人所属单位：经理首页按单位归成协调事项（只归类，不派单）
         unit = conn.execute("SELECT u.company FROM findings f JOIN users u ON u.id=f.assignee_id WHERE f.id=?", (world["fid_over"],)).fetchone()
     assert it["company"] == ((unit["company"] if unit else "") or "").strip()
-    safety_part = next(p for p in d["know"]["parts"] if p["route"] == "safety")
+    safety_part = next(p for p in d["know"]["parts"] if p["route"] == "safety?only=high")
     assert safety_part["n"] >= 1
     # 催办链阶段 4 已发给项目经理：未超期的高风险也算“已升级”
     with closing(dbmod.connect()) as conn:
@@ -297,7 +297,7 @@ def test_pm_escalated_hazards(world):
     esc2 = {i["finding"]["id"]: i for i in _src(d2, "escalated")}
     assert world["fid_rect"] in esc2 and world["fid_unas"] not in esc2
     assert esc2[world["fid_rect"]]["requested"] and not esc2[world["fid_over"]]["requested"]   # 催办链确有提请 → 经理首页“待协调”；只是超期 → “需关注”
-    assert next(p for p in d2["know"]["parts"] if p["route"] == "safety")["n"] == safety_part["n"] - 1
+    assert next(p for p in d2["know"]["parts"] if p["route"] == "safety?only=high")["n"] == safety_part["n"] - 1
     # 闭环后不再出现
     with closing(dbmod.connect()) as conn:
         conn.execute("UPDATE findings SET status='resolved' WHERE id=?", (world["fid_rect"],))

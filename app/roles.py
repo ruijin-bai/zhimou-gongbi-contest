@@ -40,6 +40,10 @@ SUB_ROLES = frozenset(k for k, v in ROLES.items() if v["org"] == "sub")
 HARBOUR_ROLES = frozenset(k for k, v in ROLES.items() if v["org"] == "harbour")  # 港湾岗位（含只读的公司领导）
 # 能看项目级汇总数据的角色（分包单位只看自己单位范围，走专门接口）
 VIEW_ROLES = frozenset(ROLES) - SUB_ROLES
+# 现场圈可进入的岗位（与前端 nav.js 的 _CIRCLE 一致）：公告通知只对这些岗位给“去现场圈”的跳转
+CIRCLE_ROLES = frozenset({"tech", "sub_safety", "manager", "eng_sup", "safety_sup"})
+# 施工日志/周进度确认的作者：只有技术员（分包安全员不处理日志）。新建、编辑、整理、提交接口按此白名单拒绝其他岗位
+LOG_WRITERS = frozenset({"tech"})
 
 _HARBOUR_OPS = {"manager", "admin"}
 CAPS: dict[str, frozenset[str]] = {k: frozenset(v) for k, v in {

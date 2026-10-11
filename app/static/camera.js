@@ -441,7 +441,7 @@ const WatermarkCamera = {
 // "不对？"只复用既有的 /api/findings/{id}/status（忽略为误报）及其权限：没有该权限（分包技术员/安全员）时不显示按钮，只提示找安全员复核。
 const fbState = Vue.reactive({ items: [] });
 let fbSeq = 0;
-const FB_POLL_MS = 2000, FB_POLL_MAX = 30, FB_SHOW_MS = 7000, FB_SLOW_S = 3;
+const FB_POLL_MS = 3000, FB_POLL_MAX = 120, FB_SHOW_MS = 7000, FB_SLOW_S = 3;   // 识别最长等约 6 分钟（后端单次 180 秒含重试），期间显示已等秒数
 
 function fbSummary(st) {
   const mock = store.me && store.me.ai && store.me.ai.provider === "mock";
@@ -473,7 +473,8 @@ const photoFeedback = {
         const ids = list.map((m) => m.id).filter((x) => Number.isInteger(x));
         if (!ids.length) { photoFeedback.close(b); return; }
         if (!scan) { b.state = "clear"; b.text = `已上传 ${list.length} 张（未做隐患识别）`; photoFeedback.autoClose(b, 3500); return; }
-        b.state = "wait"; b.text = `已收到 ${list.length} 张，识别中`;
+        b.state = "wait"; b.text = `已收到 ${list.length} 张，识别中`; b.ids = ids;
+        const t0 = Date.now(); b.tick = setInterval(() => { if (b.state === "wait") b.text = `已收到 ${list.length} 张，识别中 · 已等 ${Math.round((Date.now() - t0) / 1000)} 秒`; }, 1000);
         photoFeedback.watch(b, ids);
       },
       fail: (msg) => { landed(); b.state = "fail"; b.text = "照片上传失败：" + (msg || "请重试"); photoFeedback.autoClose(b, 9000); },
@@ -486,9 +487,14 @@ const photoFeedback = {
       k++;
       try {
         const st = await GET("/api/quick/media-status?ids=" + ids.join(","), { quiet: true });
-        if (!st.pending) { b.findings = st.findings || []; b.state = b.findings.length ? "hazard" : "clear"; b.text = fbSummary(st); photoFeedback.autoClose(b); return; }
+        if (!st.pending) {
+          clearInterval(b.tick); b.tick = 0; b.findings = st.findings || [];
+          // 识别失败：不自动收起，写明照片已保存并给“重新识别”（验收 I10）
+          if (st.failed && !b.findings.length && !st.items.some((i) => i.status === "clear")) { b.state = "fail"; b.retry = true; b.text = `识别失败：${st.failed} 张没有识别出结果，照片已保存，可以重新识别`; return; }
+          b.state = b.findings.length ? "hazard" : "clear"; b.text = fbSummary(st); photoFeedback.autoClose(b); return;
+        }
       } catch (_) { /* 轮询失败不打扰，下一轮再试 */ }
-      if (k >= FB_POLL_MAX) { b.state = "clear"; b.text = "识别进行中，请稍后在待办或日志查看"; photoFeedback.autoClose(b); return; }
+      if (k >= FB_POLL_MAX) { clearInterval(b.tick); b.tick = 0; b.state = "fail"; b.retry = true; b.text = "识别超时：等了约 6 分钟仍没有结果，照片已保存；可以重新识别，也会在“待我处理”里提示"; return; }
       b.poll = setTimeout(tick, FB_POLL_MS);
     };
     b.poll = setTimeout(tick, 1200);
@@ -499,6 +505,15 @@ const photoFeedback = {
     b.timer = setTimeout(fire, ms);
   },
   close(b) { clearTimeout(b.timer); clearTimeout(b.poll); clearInterval(b.tick); const i = fbState.items.indexOf(b); if (i >= 0) fbState.items.splice(i, 1); },
+  async rescan(b) {
+    if (!b.ids || b.busy) return;
+    b.busy = true;
+    try {
+      await POST("/api/quick/media-rescan", { ids: b.ids }); b.retry = false; b.state = "wait"; b.findings = [];
+      const t0 = Date.now(); b.tick = setInterval(() => { if (b.state === "wait") b.text = `重新识别中 · 已等 ${Math.round((Date.now() - t0) / 1000)} 秒`; }, 1000);
+      photoFeedback.watch(b, b.ids);
+    } catch (e) { b.text = "重新识别没有开始：" + (e.message || "请稍后再试"); } finally { b.busy = false; }
+  },
 };
 
 const PhotoBubble = {
@@ -512,6 +527,7 @@ const PhotoBubble = {
         <template v-else>
           <a class="small" @click="open(f)">查看</a>
           <button class="btn sm" v-if="canFix" :disabled="busy === f.id" @click="wrong(b, f)">标为误报</button></template></div>
+      <div class="pfb-row" v-if="b.retry"><button class="btn sm primary" :disabled="b.busy" @click="rescan(b)">{{ b.busy ? '提交中…' : '重新识别' }}</button><button class="btn sm" @click="close(b)">稍后再说</button></div>
       <div class="pfb-hint" v-if="b.findings.length && !canFix">识别有误请告知安全员，由其在“待确认隐患”中处理（确认或不采纳）。</div>
     </div></div>`,
   data: () => ({ LEVEL_F, busy: 0 }),
@@ -522,6 +538,7 @@ const PhotoBubble = {
   methods: {
     icon(b) { return { upload: "arrow-up", wait: "hourglass", hazard: "alert", clear: "check-circle", queued: "download", fail: "alert" }[b.state] || "camera"; },
     close: (b) => photoFeedback.close(b),
+    rescan: (b) => photoFeedback.rescan(b),
     open(f) { go("finding", { id: f.id }); },
     async wrong(b, f) {
       this.busy = f.id; b.hold = true;

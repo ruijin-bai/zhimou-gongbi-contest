@@ -1,4 +1,4 @@
-"""仿真项目生成器（莱基深水港疏港路，仿真）。
+"""仿真项目生成器（深水港疏港路，仿真）。
 
 - 数据全部写入一个独立的“仿真项目”（config.simulation=true），界面全程标注，不计入应用成效；
 - 若提供真实周产值记录（xlsx：周起/实际产值/计划产值），按记录反推每日工程量，使仿真产值与记录一致；
@@ -14,7 +14,7 @@ from datetime import date, timedelta
 from .db import all_, connect, dumps, init_db, insert, now_iso, one
 from .security import hash_password
 
-SIM_CODE = "LEKKI-SIM"
+SIM_CODE = "DEMO-SIM"
 
 # (code, name, wbs, 开始周, 工期天, 工程量, 单位, 单价USD, 前置, 负责人键)
 PLAN = [
@@ -118,9 +118,9 @@ def _xer(start: date) -> str:
                      str(tf[code] * 8), str(dur * 8), str(dur * 8), f"{es} 08:00" if first else "", f"{es} 08:00" if first else "", f"{es} 08:00", f"{ef} 17:00", f"{es} 08:00", f"{ef} 17:00", "Y" if tf[code] == 0 else "N"])
         preds += [(ids[code], ids[p]) for p in pr]
     wbs_names = sorted({p[2].split("/")[0] for p in PLAN})
-    out = ["ERMHDR\t19.12", "%T\tPROJECT", "%F\tproj_id\tproj_short_name\tlast_recalc_date", f"%R\t1\tLEKKI-SIM\t{start} 08:00",
+    out = ["ERMHDR\t19.12", "%T\tPROJECT", "%F\tproj_id\tproj_short_name\tlast_recalc_date", f"%R\t1\tDEMO-SIM\t{start} 08:00",
            "%T\tCALENDAR", "%F\tclndr_id\tclndr_name\tday_hr_cnt", "%R\t1\t7天工作制\t8",
-           "%T\tPROJWBS", "%F\twbs_id\tproj_id\tparent_wbs_id\twbs_short_name\twbs_name\tproj_node_flag", "%R\tROOT\t1\t\tROOT\t莱基疏港路\tY"]
+           "%T\tPROJWBS", "%F\twbs_id\tproj_id\tparent_wbs_id\twbs_short_name\twbs_name\tproj_node_flag", "%R\tROOT\t1\t\tROOT\t深水港疏港路\tY"]
     out += [f"%R\t{w}\t1\tROOT\t{w}\t{w}\tN" for w in wbs_names]
     out += ["%T\tTASK", "%F\ttask_id\tproj_id\twbs_id\tclndr_id\tphys_complete_pct\ttask_code\ttask_name\ttask_type\tstatus_code\ttotal_float_hr_cnt"
             "\tremain_drtn_hr_cnt\ttarget_drtn_hr_cnt\tact_start_date\tact_end_date\tearly_start_date\tearly_end_date\ttarget_start_date\ttarget_end_date\tdriving_path_flag"]
@@ -162,7 +162,7 @@ def build(records: list[dict] | None = None, weeks: int = 18, seed: int = 2026, 
     else:
         start = end - timedelta(days=end.weekday()) - timedelta(days=7 * (weeks - 1))
         recs = None
-    pid = insert(conn, "projects", {"name": "莱基深水港疏港路（仿真）", "code": SIM_CODE,
+    pid = insert(conn, "projects", {"name": "深水港疏港路（仿真）", "code": SIM_CODE,
                                     "config_json": dumps({"simulation": True, "workdays_per_week": 7, "cadence": "week", "daily_log": True}), "created_at": now_iso()})
     users = {}
     for key, (uname, name, scope) in TECHS.items():
@@ -174,7 +174,7 @@ def build(records: list[dict] | None = None, weeks: int = 18, seed: int = 2026, 
     insert(conn, "users", {"username": "sim_leader", "name": "公司领导（仿真）", "role": "leader", "password_hash": hash_password(password),
                            "project_id": pid, "wbs_scope": "", "email": "", "active": 1, "created_at": now_iso()})
     ensure_role_accounts(conn, pid, password)
-    p6.import_schedule(conn, pid, pm, "LEKKI-SIM-baseline.xer", _xer(start).encode("utf-8"), start.isoformat())
+    p6.import_schedule(conn, pid, pm, "DEMO-SIM-baseline.xer", _xer(start).encode("utf-8"), start.isoformat())
     # 清单与已确认映射（仿真中由商务一次性确认）
     for code, name, wbs, wk, dur, qty, unit, price, pr, own in PLAN:
         if not dur:

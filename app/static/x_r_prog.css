@@ -54,7 +54,7 @@
 .rp-rec-b .zb-src { border: 0; padding: 0; }
 .rp-fc .fc-rain .zb-ch { margin-bottom: 4px; }
 .rp-fc .fc-rain .small { color: var(--ink2); }
-/* 长作业名、长编码：任何一块都不撑宽页面 */
+/* 长作业名、长编码（真实项目 SEC1）：任何一块都不撑宽页面 */
 .rp-fc .zb-kpi-b > *, .rp-fc .fc-t, .rp-fc .rp-ms-d, .rp-fc .readrow, .rp-fc .rp-meta, .rp-fc .zb-ch h2, .rp-fc .rp-rec-l, .rp-fc .fc-rain .small { min-width: 0; overflow-wrap: anywhere; }
 .rp-fc .chip, .rp-fc .zb-ch h2 { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
 @media (max-width: 860px) { .rp-fc .fc-low { grid-template-columns: minmax(0, 1fr); } }
@@ -115,7 +115,7 @@
 @media (max-width: 1180px) and (min-width: 861px) { .k10c { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .k10c .k10-year { grid-column: 1 / -1; } }
 @media (max-width: 860px) {
   .k10c, .op-low { grid-template-columns: minmax(0, 1fr); gap: 10px; }
-  .op-low .oc-legend { margin-left: 0; justify-content: flex-start; }
+  .op-low .oc-legend { margin-left: 0; justify-content: flex-start; flex: 1 1 100%; min-width: 0; }   /* 手机：图例占满一行并换行，不按内容宽度撑出横向溢出（验收 I15） */
   .op-src .op-src-r, .op-src .op-src-l { display: none; }
   .k10c .zb-card { padding: 8px 12px 6px; }
   .op-page .zb-hero { height: 60px; }

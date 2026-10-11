@@ -47,7 +47,9 @@ def test_guard():
 def test_api_and_roles(env):
     ids = _world(env)
     aid = _alert(env)
-    d = login("pm").get(f"/api/alerts/{aid}/slow-diag").json()
+    d0 = login("pm").get(f"/api/alerts/{aid}/slow-diag").json()   # 打开详情不调用模型：系统统计句 + 可点“AI 归因”（验收 I9）
+    assert d0["source"] == "rule" and d0["can_ai"] and d0["main"] == "equipment"
+    d = login("pm").get(f"/api/alerts/{aid}/slow-diag?run=1").json()
     assert d["main"] == "equipment" and d["source"] == "mock" and f"[L{ids['e1']}]" in d["text"]
     assert login("tech1").get(f"/api/alerts/{aid}/slow-diag").status_code == 403
 

@@ -67,6 +67,11 @@ _CAUSE = {
 }
 
 
+def cause_of(exc: "AIError") -> str:
+    """给页面一句简短原因（不带原始报错、接口返回的 JSON），如“交融大模型响应超时，自动重试后仍未返回”。"""
+    return _CAUSE.get(getattr(exc, "kind", "other"), ("模型调用出错", ""))[0]
+
+
 def explain(exc: "AIError") -> str:
     """AIError → 给用户看的完整说明：模型有问题、这次没生成内容（不用模板代替）、原因、下一步、原始错误。"""
     cause, advice = _CAUSE.get(getattr(exc, "kind", "other"), ("模型调用出错", "稍后点重试"))

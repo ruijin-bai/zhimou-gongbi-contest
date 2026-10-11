@@ -66,8 +66,10 @@ def publish(conn, user: dict, title: str, body: str, pinned: bool = False, audie
     audit(conn, user["id"], "circle.notice.publish", f"notice:{nid}", f"{audience}:{company} {title}"[:100])
     for u in recipients(conn, n):
         if u["id"] != user["id"]:
+            link = {"route": "circle", "params": {}} if u["role"] in R.CIRCLE_ROLES else None
             insert(conn, "notifications", {"project_id": user["project_id"], "user_id": u["id"], "alert_id": None, "title": f"公告：{title}",
-                                           "body": body[:80], "channels_json": dumps({"inapp": "sent"}), "created_at": now_iso()})
+                                           "body": body[:2000], "channels_json": dumps({"inapp": "sent"}), "created_at": now_iso(),
+                                           "link_json": dumps(link) if link else None})
     return n
 
 

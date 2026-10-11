@@ -223,8 +223,10 @@ def test_feedback_does_not_claim_received_before_upload_finishes():
       out.slow = b.text;
       h.sent([{ id: 5 }]);
       out.after = b.text; out.stateAfter = b.state;
-      out.tickerCleared = timers.filter((t) => t.kind === 'i').every((t) => t.cleared);
+      out.tickerCleared = timers.filter((t) => t.kind === 'i')[0].cleared;   // 上传计时停了；之后另起“识别中 · 已等 N 秒”的计时（验收 I10）
+      out.waitTicker = timers.filter((t) => t.kind === 'i').length === 2;
     """)
+    assert out["waitTicker"], out
     assert "识别中" not in out["before"] and "已收到" not in out["before"] and "上传" in out["before"], out
     assert out["stateBefore"] == "upload" and "12 秒" in out["slow"] and "识别中" not in out["slow"], out
     assert out["after"] == "已收到 1 张，识别中" and out["stateAfter"] == "wait" and out["tickerCleared"], out

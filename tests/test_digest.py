@@ -46,3 +46,12 @@ def test_digest_only_for_harbour_roles(env):
     for who in ("tech1", "sa_a", "admin"):
         assert login(who).post("/api/digest", json=body).status_code == 403, who
     assert login("ss").post("/api/digest", json=body).status_code == 200
+
+
+def test_cached_only_does_not_call_model(env, monkeypatch):
+    """验收 I9：进页面、切筛选只取已有小结（cached_only），没有就返回规则版，不调用模型。"""
+    def boom(*a, **k):
+        raise AssertionError("cached_only 不应调用模型")
+    monkeypatch.setattr(d, "call_json", boom)
+    r = login("pm").post("/api/digest", json={"kind": "alerts", "facts": FACTS, "fallback": FACTS["lead"], "cached_only": True}).json()
+    assert r["source"] == "rule" and r["text"] == FACTS["lead"] and r.get("pending")

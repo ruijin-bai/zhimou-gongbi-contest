@@ -14,8 +14,8 @@ def register(app) -> None:
     from ..services import sub_profile as svc
 
     @app.get("/api/sub-profiles")
-    def sub_profiles(user=Depends(M.current_user), conn=Depends(M.db)):
+    def sub_profiles(run: int = 0, user=Depends(M.current_user), conn=Depends(M.db)):
         try:
-            return svc.listing(conn, user)
+            return svc.listing(conn, user, run=bool(run))
         except PermissionError as e:
             raise HTTPException(403, str(e)) from None

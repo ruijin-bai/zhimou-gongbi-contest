@@ -1,6 +1,7 @@
 """“问工笔”：规划 → 检索 → 有据回答。"""
 from __future__ import annotations
 
+import re
 from datetime import date, timedelta
 
 from .. import roles as R
@@ -280,6 +281,12 @@ def ask(conn, user: dict, question: str, agent: str | None = None) -> dict:
             facts += _findings_facts(conn, pid, s_.split(":")[1], words)
     if not scope and "产值" in question:  # 问工笔里明确问产值：带上产值事实（各岗位都能查产值，经理只读）
         srcs = [*DEFAULT_SOURCES, "output"]
+    scope_text = SCOPES[agent]["scope"] if scope else "项目日志、P6 进度与预警"
+    if not scope:   # 问工笔里问到安全隐患、质量问题：检索范围带上安全/质量台账，不只查日志与进度（验收 I11）
+        for kw, ag, name in ((r"安全|隐患", "safety", "安全隐患台账"), (r"质量|质控", "quality", "质量问题台账")):
+            if re.search(kw, question):
+                facts += _findings_facts(conn, pid, ag, words)
+                scope_text += "、" + name
     if srcs:
         facts += (_dq_facts(conn, pid) if "dq" in srcs else []) + (_output_facts(conn, pid) if "output" in srcs else [])             + (_report_facts(conn, pid, user["role"], question) if "reports" in srcs else []) + (_brief_facts(conn, pid) if "brief" in srcs else [])
         for s_ in srcs:
@@ -331,4 +338,4 @@ def ask(conn, user: dict, question: str, agent: str | None = None) -> dict:
     if problems:
         ans = qa_agent.rule_answer(facts_text, "回答里有记录中查不到的数字")
     return {"question": question, "plan": plan, "answer": ans["answer"], "refs": ans["refs"], "facts_count": len(facts),
-            "agent": agent if scope else None, "degraded": bool(res.degraded or plan_res.degraded or problems)}
+            "agent": agent if scope else None, "scope": scope_text, "degraded": bool(res.degraded or plan_res.degraded or problems)}

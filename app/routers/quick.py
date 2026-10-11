@@ -111,6 +111,10 @@ class SyncNoteIn(BaseModel):
     client_time: str | None = Field(None, max_length=40)
 
 
+class RescanIn(BaseModel):
+    ids: list[int] | None = None
+
+
 class SyncRectifyIn(BaseModel):
     client_id: str = Field(min_length=8, max_length=64)
     finding_id: int
@@ -269,6 +273,25 @@ def register(app) -> None:
         except ValueError:
             raise HTTPException(400, "ids 格式错误") from None
         return quick.media_status(conn, user, id_list)
+
+    @app.post("/api/quick/media-rescan")
+    def media_rescan(body: RescanIn, bg: BackgroundTasks, user=Depends(M.current_user), conn=Depends(M.db)):
+        """识别失败或超时的照片由上传人（分包安全员含本单位、安全主管全项目）重新识别；识别在后台进行（验收 I10）。"""
+        ids = quick.rescan_claim(conn, user, body.ids)
+        if not ids:
+            raise HTTPException(409, "没有需要重新识别的照片（可能已识别完成）")
+
+        def run(media_ids: list[int], uid: int) -> None:
+            c = M.connect()
+            try:
+                M.site_agents.safety_scan(c, media_ids, uid)
+                M.site_agents.after_rescan(c, media_ids)
+            except Exception:  # noqa: BLE001
+                M.log.exception("重新识别失败")
+            finally:
+                c.close()
+        bg.add_task(run, ids, user["id"])
+        return {"queued": len(ids), "ids": ids}
 
     # ------------------------------------------------------------------ 弱网/离线补传（client_id 幂等）
 

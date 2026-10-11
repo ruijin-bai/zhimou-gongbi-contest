@@ -87,7 +87,7 @@ def mock_text(facts: dict, fallback: str) -> str:
     return ("；".join(parts) + "。") if parts else fallback
 
 
-def summarize(conn, project_id: int, user_id: int | None, kind: str, facts: dict, fallback: str) -> dict:
+def summarize(conn, project_id: int, user_id: int | None, kind: str, facts: dict, fallback: str, cached_only: bool = False) -> dict:
     """返回 {text, source: ai|rule, note, provider, run_id}。source=rule 时 text 即调用方给的规则版文字。"""
     if kind not in KINDS:
         raise ValueError("不支持的列表类型")
@@ -96,6 +96,8 @@ def summarize(conn, project_id: int, user_id: int | None, kind: str, facts: dict
     if hit:   # 业务库的行是字典（db.connect 设了 row_factory），这里按列名取
         h = dict(hit) if not isinstance(hit, tuple) else dict(zip(("text", "source", "note", "run_id", "provider"), hit))
         return {"text": h["text"], "source": h["source"], "note": h["note"] or "", "run_id": h["run_id"], "provider": h["provider"] or "", "cached": True}
+    if cached_only:   # 没有现成结果：只给规则版，不调用模型
+        return {"text": fallback, "source": "rule", "note": "", "run_id": None, "provider": "", "cached": False, "pending": True}
     agent, list_name = KINDS[kind]
     out = {"text": fallback, "source": "rule", "note": "", "run_id": None, "provider": ""}
 

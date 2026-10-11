@@ -113,11 +113,14 @@ def project_facts(conn, project_id: int, ctx: dict | None = None, limit: int = 5
     """项目层事实：未关闭预警数量与头部作业、里程碑按期概率（缺值写未知，不当作 0）、P6 数据日期。"""
     ctx = ctx or context(conn, project_id)
     cnt = {r["level"]: r["n"] for r in all_(conn, "SELECT level, COUNT(*) n FROM alerts WHERE project_id=? AND status='open' AND rule<>'stale' GROUP BY level", (project_id,))}
+    # 已确认属实、尚未关闭的预警（经理首页“进度风险”、领导总览、预警页“红色预警”同一口径）：底稿另列，免得依据行只写待确认的 0
+    conf = {r["level"]: r["n"] for r in all_(conn, "SELECT level, COUNT(*) n FROM alerts WHERE project_id=? AND status='confirmed' AND rule<>'stale' GROUP BY level", (project_id,))}
     lag = [activity_facts(conn, project_id, r["activity_code"], ctx) for r in all_(
         conn, "SELECT activity_code FROM alerts WHERE project_id=? AND status='open' AND rule<>'stale' AND level IN ('red','orange') ORDER BY level DESC, id LIMIT ?", (project_id, limit))]
     fc = ctx["forecast"] or {}
     return {"kind": "project", "p6_data_date": ctx["imp"]["data_date"] if ctx["imp"] else None,
-            "alerts": {k: cnt.get(k, 0) for k in ("red", "orange", "yellow")}, "lag_alerts": lag,
+            "alerts": {k: cnt.get(k, 0) for k in ("red", "orange", "yellow")}, "confirmed": {k: conf.get(k, 0) for k in ("red", "orange", "yellow")},
+            "lag_alerts": lag,
             "milestones": [{"code": m["code"], "name": m["name"], "p6_date": m["p6_date"], "forecast": m["forecast"], "p50": m.get("p50"), "p80": m.get("p80"),
                             "on_time_prob": m["on_time_prob"]} for m in fc.get("milestones", [])[:6]],
             "iterations": fc.get("iterations"), "project_finish": fc.get("project_finish"), "forecast_at": fc.get("created_at")}
@@ -172,7 +175,9 @@ def render(f: dict) -> str:
 
 def render_project(p: dict) -> str:
     a = p["alerts"]
-    L = [f"P6 数据日期 {p['p6_data_date'] or '无'}；未关闭进度预警：红 {a['red']} 橙 {a['orange']} 黄 {a['yellow']}"]
+    c = p.get("confirmed") or {}
+    L = [f"P6 数据日期 {p['p6_data_date'] or '无'}；待确认进度预警：红 {a['red']} 橙 {a['orange']} 黄 {a['yellow']}"
+         + (f"；已确认未关闭：红 {c.get('red', 0)} 橙 {c.get('orange', 0)} 黄 {c.get('yellow', 0)}" if c else "")]
     for f in p["lag_alerts"]:
         L.append(render(f))
     if p["milestones"]:

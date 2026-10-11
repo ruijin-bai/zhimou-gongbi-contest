@@ -14,7 +14,7 @@ import re
 from datetime import date, datetime, timedelta
 
 from .. import roles as R
-from ..ai.client import AIError, call_json
+from ..ai.client import AIError, call_json, cause_of
 from ..db import all_, now_iso, one
 from . import p6
 
@@ -147,13 +147,15 @@ def _norm(d) -> dict:
     return {"text": t[:200]}
 
 
-def evaluate(conn, pid: int, p: dict, user_id: int | None) -> dict:
+def evaluate(conn, pid: int, p: dict, user_id: int | None, cached_only: bool = False) -> dict:
     ftext = facts_text(p)
     base = {"text": rule_text(p), "source": "rule", "note": ""}
     key = hashlib.sha256(json.dumps({"p": pid, "f": ftext, "d": date.today().isoformat(), "v": PROMPT_VERSION}, ensure_ascii=False).encode()).hexdigest()[:32]
     hit = one(conn, "SELECT * FROM subprofile_cache WHERE key=?", (key,))
     if hit:
         return {"text": hit["text"], "source": hit["source"], "note": hit["note"] or ""}
+    if cached_only:   # 打开页面不调用模型（验收 I9）
+        return {**base, "can_ai": True}
     try:
         res = call_json("sub.profile", system=SYSTEM, user=ftext, prompt_version=PROMPT_VERSION, mock=lambda: {"text": base["text"]}, validate=_norm,
                         project_id=pid, user_id=user_id, max_tokens=400, temperature=0.2, input_meta={"company": p["company"]})
@@ -165,7 +167,7 @@ def evaluate(conn, pid: int, p: dict, user_id: int | None) -> dict:
         else:
             base.update(text=res.data["text"], source="ai")
     except AIError as exc:
-        base["note"] = "AI 暂不可用，用系统统计句（" + str(exc)[:30] + "）"
+        base["note"] = "AI 暂不可用，用系统统计句（" + cause_of(exc) + "）"
     if base["source"] != "ai":   # 只缓存真实模型成功的评价，失败不缓存（RJ 2026-10-09）
         return base
     conn.execute("INSERT OR REPLACE INTO subprofile_cache(key, project_id, company, text, source, note, created_at) VALUES (?,?,?,?,?,?,?)",
@@ -173,7 +175,7 @@ def evaluate(conn, pid: int, p: dict, user_id: int | None) -> dict:
     return base
 
 
-def listing(conn, user: dict) -> dict:
+def listing(conn, user: dict, run: bool = False) -> dict:
     if user["role"] not in ROLES:
         raise PermissionError("分包履约画像只给工程主管、安全主管和项目经理")
     with_logs = user["role"] == "eng_sup"     # 项目经理不看日志填报；安全主管不管日志
@@ -181,5 +183,5 @@ def listing(conn, user: dict) -> dict:
     items = []
     for c in companies(conn, pid):
         p = profile(conn, pid, c, with_logs)
-        items.append({**p, "facts": facts_text(p), "eval": evaluate(conn, pid, p, user["id"])})
+        items.append({**p, "facts": facts_text(p), "eval": evaluate(conn, pid, p, user["id"], cached_only=not run)})
     return {"items": items, "days": DAYS, "with_logs": with_logs, "role_name": R.role_name(user["role"])}

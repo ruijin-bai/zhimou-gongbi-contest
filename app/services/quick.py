@@ -458,6 +458,35 @@ def pending_count(conn, user: dict) -> int:
 
 # ----------------------------------------------------------------------------- 拍完即时反馈：识别状态
 
+SCAN_STUCK_MIN = 10   # 识别中超过这么久仍没结果，按“识别超时”给出重新识别（后端单次调用最长约 180 秒，含重试）
+
+
+def scan_problems(conn, user: dict, days: int = 7) -> list[dict]:
+    """近 days 天本人可处理的照片里，识别失败或识别超时（pending 超过 SCAN_STUCK_MIN 分钟）的（验收 I10）。
+    技术员看自己的；分包安全员看本单位的；安全主管看全项目的。"""
+    from datetime import datetime, timedelta
+    from . import role_views
+    if user["role"] not in ("tech", "sub_safety", "safety_sup"):
+        return []
+    now = datetime.fromisoformat(now_iso())
+    stuck = (now - timedelta(minutes=SCAN_STUCK_MIN)).isoformat(timespec="seconds")
+    since = (now - timedelta(days=days)).isoformat(timespec="seconds")
+    q = ("SELECT id, uploader_id, safety_status, uploaded_at FROM media WHERE project_id=? AND purpose IN ('safety','log') AND uploaded_at>=? "
+         "AND (safety_status='failed' OR (safety_status='pending' AND uploaded_at<?))")
+    rows = all_(conn, q + " ORDER BY uploaded_at DESC LIMIT 40", (user["project_id"], since, stuck))
+    ids = role_views.scope_ids(conn, user) if user["role"] != "safety_sup" else None
+    return [r for r in rows if ids is None or r["uploader_id"] in ids]
+
+
+def rescan_claim(conn, user: dict, ids: list[int] | None) -> list[int]:
+    """把可重新识别的照片置回“识别中”，返回要识别的 id（只认 scan_problems 里的，不能借此重识别别人的照片）。"""
+    ok = {r["id"] for r in scan_problems(conn, user)}
+    pick = [i for i in (ids or ok) if i in ok][:20]
+    if pick:
+        conn.execute(f"UPDATE media SET safety_status='pending' WHERE id IN ({','.join('?' * len(pick))})", pick)
+    return pick
+
+
 def media_status(conn, user: dict, ids: list[int]) -> dict:
     """本人（分包安全员含本单位同事）照片的安全识别进展与结果摘要，供拍照后的反馈气泡轮询。只读。"""
     ids = [int(i) for i in ids][:20]

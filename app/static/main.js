@@ -42,9 +42,12 @@ watch(() => store.route, () => { PAGE.err = null; });
 
 // 项目经理只关注进度、质量、安全，不看日志与周确认（F-14）：这些页面即使直达也不打开，日志详情（周报引用、现场圈链接）仍可看，字段由后端裁剪。
 // 催办台（chase）也不进：项目经理只拍板（D7、AC-6.7），地址栏直接输入 #/chase 同样拦下，后端催办台接口对项目经理返回 403（D-7）
-const PM_OFF_ROUTES = ["logs", "week", "capture", "manual", "chase"];
+// 其他岗位的首页（工程主管、安全主管、技术员、分包安全员、管理员）：项目经理手输地址也不打开（验收 D6）
+const PM_OTHER_HOMES = ["eng", "sdash", "home", "shome", "sysh"];
+const PM_OFF_ROUTES = ["logs", "week", "capture", "manual", "chase", ...PM_OTHER_HOMES];
 const pmOutOfScope = (role, name) => role === "manager" && PM_OFF_ROUTES.includes(name);
-const pmOutReason = (name) => name === "chase" ? "超期事项的逐级催办由工程主管、安全主管跟进；升级到你的事项在智能管理台的待办里。"
+const pmOutReason = (name) => PM_OTHER_HOMES.includes(name) ? "这是其他岗位的工作台；你的首页是智能管理台，进度、质量、安全都在那里。"
+  : name === "chase" ? "超期事项的逐级催办由工程主管、安全主管跟进；升级到你的事项在智能管理台的待办里。"
   : "施工日志与周确认由工程主管跟进；智能管理台可以看进度、质量、安全。";
 
 // 报表（RJ 10-09）：日报（施工日志）、周报、月报合在“工笔文书 · 报表”一页，上方切换。各分页沿用原地址，书签与通知里的链接照常打开：

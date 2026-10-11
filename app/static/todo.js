@@ -229,6 +229,14 @@ const TodoCandGroup = {
 };
 
 // 同一来源 ≥3 条的重复事项合成一行；有 CandidateGroup 时同一张照片的候选合成一组（筛选/搜索后仍按当前可见的条目分组）
+// 首页指标与下方待办表同一口径（验收 I1/I2）：n、overdue 按表里的行数（同照片候选合成一行），
+// candItems 是 AI 候选隐患条数（含“另有 N 项”折叠掉的，与安全台账“AI 候选”同源），cand 是候选所占行数
+function todoCounts(list) {
+  const es = todoEntries(list || []), isCand = (i) => i.source === "candidate" || i.source === "candidate_more";
+  return { n: es.length, overdue: es.filter((e) => e.overdue || (e.items || []).some((x) => x.overdue)).length,
+    cand: es.filter((e) => (e.cgroup ? true : isCand(e))).length,
+    candItems: (list || []).reduce((a, i) => a + (i.source === "candidate" ? 1 : i.source === "candidate_more" ? i.more_n || 0 : 0), 0) };
+}
 function todoEntries(list) {
   const by = {}, cand = {}, grouped = !!window.CandidateGroup;
   for (const i of list) {
@@ -270,6 +278,7 @@ const TodoBoard = {
       <div class="todo-tools row wrap" v-if="d.items.length > 3">
         <button :class="['tfilter', {on: f === 'today'}]" @click="setFilter('today')">今日到期 {{ todayN }}</button>
         <button :class="['tfilter', {on: f === 'urgent'}]" @click="setFilter('urgent')">{{ URGENT_NAME }} {{ urgentN }}</button>
+        <span class="chip blue" v-if="f === 'overdue' || f === 'cand'">{{ f === 'overdue' ? '只看超期' : '只看 AI 候选' }} <a @click="setFilter(f)" aria-label="取消筛选">×</a></span>
         <input class="in tsearch" v-model.trim="q" placeholder="搜索事项" aria-label="搜索待办"></div></div>
     <empty-state class="todo-empty" v-if="!d.items.length" :title="emptyTitle" :reason="d.empty && !cards ? d.empty.hint : '当前没有需要你办理的事项。'" :actions="d.empty && !cards ? d.empty.actions : []"></empty-state>
     <empty-state class="todo-empty" compact v-else-if="!rows.length" reason="没有符合条件的事项。" :action="{label: '清除筛选', fn: reset}"></empty-state>
@@ -293,7 +302,8 @@ const TodoBoard = {
     urgentN() { return this.allEntries.filter((e) => (e.items ? e.items.some(todoUrgent) : todoUrgent(e))).length; },
     rows() {
       const q = this.q.toLowerCase();
-      return this.d.items.filter((i) => i.id !== this.skip).filter((i) => (this.tab === "all" || i.module === this.tab) && (!this.f || (this.f === "today" ? i.due === this.d.day : todoUrgent(i)))
+      const fit = (i) => (this.f === "today" ? i.due === this.d.day : this.f === "overdue" ? i.overdue : this.f === "cand" ? (i.source === "candidate" || i.source === "candidate_more") : todoUrgent(i));
+      return this.d.items.filter((i) => i.id !== this.skip).filter((i) => (this.tab === "all" || i.module === this.tab) && (!this.f || fit(i))
         && (!q || (i.title + " " + i.reason).toLowerCase().includes(q)));
     },
     entries() { return todoEntries(this.rows); },
@@ -310,7 +320,7 @@ const TodoBoard = {
   },
   methods: {
     todoGo,
-    setFilter(f) { this.f = this.f === f ? "" : f; this.tab = "all"; },
+    setFilter(f, on) { this.f = on ? f : this.f === f ? "" : f; this.tab = "all"; if (on) this.all = true; },
     reset() { this.tab = "all"; this.f = ""; this.q = ""; },
   },
 };
@@ -479,10 +489,11 @@ const TodoMobile = {
   components: { TodoBoard, TodoStrip },
   props: { strip: Boolean, title: { type: String, default: "我的待办" } },
   emits: ["loaded"],
-  template: `<div class="todo-mobile" v-if="d"><div class="row between"><h2 class="todo-h">{{ title }}<span class="chip orange" v-if="d.total">{{ d.total }} 项</span></h2><span class="tiny tc-over" v-if="d.overdue">已超期 {{ d.overdue }} 项</span></div>
+  template: `<div class="todo-mobile" v-if="d"><div class="row between"><h2 class="todo-h">{{ title }}<span class="chip orange" v-if="cnt.n">{{ cnt.n }} 项</span></h2><span class="tiny tc-over" v-if="cnt.overdue">已超期 {{ cnt.overdue }} 项</span></div>
     <todo-strip v-if="strip" :d="d" @filter="f => $refs.board.setFilter(f)"></todo-strip>
     <todo-board ref="board" :d="d" :cards="true" @changed="changed"></todo-board></div>`,
   data: () => ({ d: null, err: "" }),
+  computed: { cnt() { return todoCounts(this.d ? this.d.items : []); } },   // 与下方列表同一单位（合并行算一项）
   mounted() { this.load(); this.onSync = () => this.load(); window.addEventListener("zb-quick-synced", this.onSync); },
   unmounted() { window.removeEventListener("zb-quick-synced", this.onSync); },
   methods: { load: todoLoad.load, changed() { this.load(); this.$emit("loaded"); } },

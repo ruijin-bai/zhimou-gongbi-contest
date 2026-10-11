@@ -168,7 +168,7 @@ def test_single_page_head_per_page():
 
 def test_frontend_syntax_and_cache_bump():
     html = read("index.html")
-    assert "x_ui.css?v=17" in html and "x_ui.js?v=13" in html
+    assert "x_ui.css?v=17" in html and "x_ui.js?v=14" in html
     if NODE:
         for n in CONVERTED + ["x_ui.js", "main.js", "core.js"]:
             r = subprocess.run([NODE, "--check", str(STATIC / n)], capture_output=True, text=True, timeout=60)

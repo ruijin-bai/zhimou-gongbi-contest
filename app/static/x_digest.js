@@ -9,23 +9,26 @@ const DigestHead = {
       <div class="grow"><b>{{ r && r.source === 'ai' && r.provider !== 'mock' ? 'AI ' + title : title }}<span class="chip blue dg-tag" v-if="r && r.source === 'ai' && r.provider !== 'mock'">AI按当前事实整理</span><i class="zb-sys dg-tag" v-else-if="ai">离线模拟模型输出 · 不作结论</i><i class="zb-sys dg-tag" v-else-if="r && !loading">系统按当前事实生成</i></b>
         <small v-if="loading">{{ agentName }}正在看这些数据…</small>
         <small v-else-if="ai">{{ agentName }}根据下方统计写的判断，数字已与系统统计逐一核对<template v-if="r.provider === 'mock'">（离线模拟模型）</template></small>
-        <small v-else>按规则自动归并，数字取自下方列表<template v-if="r && r.note">；{{ r.note }}</template></small></div><slot name="tools"></slot></div>
+        <small v-else>按规则自动归并，数字取自下方列表<template v-if="r && r.note">；{{ r.note }}</template></small></div>
+      <button class="btn sm" type="button" v-if="canAi && !ai" :disabled="loading" @click="load(false)">{{ loading ? '生成中…' : 'AI 小结' }}</button><slot name="tools"></slot></div>
     <p class="ad-lead">{{ ai ? r.text : fallback }}</p>
     <div class="dg-basis" v-if="ai && r.text !== fallback"><span>系统统计：</span>{{ fallback }}</div></div>`,
   data: () => ({ r: null, loading: false, seq: 0 }),
   computed: {
     ai() { return !!(this.r && (this.r.source === "ai" || this.r.source === "mock")); },   // mock：照样显示，下方小字标“离线模拟模型”
+    canAi() { return ["eng_sup", "safety_sup", "manager", "leader"].includes(store.me.user.role) && !(this.kind === "logs" && store.me.user.role === "manager"); },
     agentName() { return { alerts: "进度智能体", safety: "安全智能体", quality: "质量智能体", logs: "数据审核智能体", tickets: "材料智能体" }[this.kind] || "智能体"; },
     sig() { return JSON.stringify([this.kind, this.facts]); },
   },
-  watch: { sig: { immediate: true, handler() { this.load(); } } },
+  // 进页面、切筛选只取已有的小结（cached_only，不调用模型）；没有就显示规则归并文字，点“AI 小结”才生成（验收 I9，易错项 AI-05）
+  watch: { sig: { immediate: true, handler() { this.load(true); } } },
   methods: {
-    async load() {
+    async load(cachedOnly) {
       if (!this.facts || !this.fallback) return;
-      if (!["eng_sup", "safety_sup", "manager", "leader"].includes(store.me.user.role)) { this.r = { source: "rule" }; return; }  // AI 小结只给港湾岗位，分包岗位直接用规则归并文字
-      const n = ++this.seq; this.loading = true;
-      try { const r = await POST("/api/digest", { kind: this.kind, facts: this.facts, fallback: this.fallback }); if (n === this.seq) this.r = r; }
-      catch (_) { if (n === this.seq) this.r = { source: "rule", note: "AI 小结暂不可用" }; }
+      if (!this.canAi) { this.r = { source: "rule" }; return; }  // AI 小结只给港湾岗位，分包岗位直接用规则归并文字
+      const n = ++this.seq; if (!cachedOnly) this.loading = true;
+      try { const r = await POST("/api/digest", { kind: this.kind, facts: this.facts, fallback: this.fallback, cached_only: !!cachedOnly }); if (n === this.seq) this.r = r; }
+      catch (e) { if (n === this.seq) this.r = { source: "rule", note: cachedOnly ? "" : "AI 小结没有生成：" + (e.message || "请稍后重试") }; }
       finally { if (n === this.seq) this.loading = false; }
     },
   },

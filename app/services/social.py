@@ -542,7 +542,7 @@ def dm_send(conn, user: dict, to: int, text: str, file_ids: list[int], ref_key: 
     conn.execute("UPDATE dm_threads SET last_at=? WHERE id=?", (now_iso(), t["id"]))
     conn.execute("INSERT INTO dm_reads (thread_id, user_id, last_id) VALUES (?,?,?) ON CONFLICT(thread_id, user_id) DO UPDATE SET last_id=excluded.last_id", (t["id"], user["id"], mid))
     if not unread_from_me:  # 对方已读完我之前的消息才提醒，连发多条只提醒一次；通知里不写私信内容
-        _notify(conn, user["project_id"], peer["id"], f"{user['name']} 给你发来私信", "")
+        _notify(conn, user["project_id"], peer["id"], f"{user['name']} 给你发来私信", "", link={"route": "circle", "params": {"dm": str(user["id"])}})
     return _msg_view(one(conn, "SELECT * FROM dm_messages WHERE id=?", (mid,)), user)
 
 

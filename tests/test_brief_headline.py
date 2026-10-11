@@ -157,7 +157,7 @@ def test_zero_sample_conclusion_is_withheld(env):
 
 def test_out_of_scope_basis_lines_dropped():
     b = brief.basis({"facts": "日期 x\n进度预警：红1\n今日日志填报 2/4\n本周产值 30 万", "source": "template", "note": "AI 简报与事实底稿不一致"})
-    assert b["lines"] == ["进度预警：红1"] and "模板" in b["source"] and b["note"]
+    assert b["lines"] == ["待确认进度预警：红1"] and "模板" in b["source"] and b["note"]
 
 
 # ----------------------------------------------------------------------------- 1/2/3 前端文案
@@ -197,3 +197,16 @@ def test_milestone_p50_delay_accepted_as_lag_days():
     text = F.render_project(p)
     assert F.check_text("主桥合龙预计滞后 12 天", [p], extra=text) == []
     assert F.check_text("主桥合龙预计滞后 25 天", [p], extra=text)
+
+
+def test_forecast_flags_stale_p6_batch(env):
+    """验收 I14：预测依据的 P6 数据日期与当前批次不一致时，接口标 stale_p6，页面先说明预测已过期。"""
+    _setup_site(env)
+    with closing(dbmod.connect()) as conn:
+        schedule.forecast(conn, env["project_id"])
+    d = login("eng").get("/api/schedule/forecast").json()
+    assert d["stale_p6"] is False and d["current_data_date"] == d["data_date"]
+    with closing(dbmod.connect()) as conn:
+        conn.execute("UPDATE p6_imports SET data_date='2000-01-01' WHERE project_id=? AND is_current=1", (env["project_id"],))
+    d = login("eng").get("/api/schedule/forecast").json()
+    assert d["stale_p6"] is True and d["current_data_date"] == "2000-01-01"

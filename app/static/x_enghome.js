@@ -179,8 +179,11 @@ const EngBoard = {
           <span class="grow"></span><help-tip v-if="sideTip" :text="sideTip"></help-tip><button type="button" class="zb-link eh-fold-t" v-if="narrow" @click="tog('side')">{{ shut('side') ? '展开' : '收起' }}</button></div>
         <div class="zb-body">
           <div class="zb-empty" v-if="!p">分包日志汇总加载中或暂不可用。</div>
-          <template v-else-if="side === 'trend'"><eh-pair-bars v-if="trendOk" :days="p.trend" a="labor" b="machinery" a-name="人" b-name="机械台" label="近 14 天分包日志人数与机械台数"><span class="tiny muted">分包日志合计 · 无日志的日期不画柱</span></eh-pair-bars>
-            <div class="zb-empty" v-else>近 14 天还没有分包日志，没有人数和台数可汇总。</div></template>
+          <template v-else-if="side === 'trend'"><template v-if="trendOk"><div class="small">{{ latestResources.date }} · 人员 {{ latestResources.labor_recorded === false ? '—' : latestResources.labor }} 人 · {{ resourceEstimated ? '进场设备' : '机械' }} {{ latestResources.machinery_recorded === false ? '—' : latestResources.machinery }} 台</div>
+            <div class="tiny muted" v-if="resourceEstimated">按用户确认比例估算 · SEC1 70%，SEC2 30%</div>
+            <eh-pair-bars :days="resourceDays" a="labor" b="machinery" a-name="人" :b-name="resourceEstimated ? '进场设备台' : '机械台'" label="近 14 天日报人员与设备数量"><span class="tiny muted">{{ resourceEstimated ? '按用户确认比例估算 · SEC1 70%，SEC2 30%' : '分包日志合计 · 无投入数据的日期不画柱' }}</span></eh-pair-bars>
+            <div class="tiny muted" v-if="resourceEstimated">进场设备不代表当日运转台数；原日报总数保留可追溯。</div></template>
+            <div class="zb-empty" v-else>{{ p.trend.length ? '近 14 天已有日报，但尚无可汇总的人员、设备数量。' : '近 14 天没有日报，暂无法汇总人员、设备数量。' }}</div></template>
           <template v-else-if="side === 'block'"><div class="zb-btns eh-bk-n" v-if="p.blockers.counts.length"><span class="chip orange" v-for="c in p.blockers.counts" :key="c.type">{{ c.type }} {{ c.n }}</span></div>
             <template v-for="(b, i) in p.blockers.items.slice(0, 2)" :key="i"><div class="eh-bk"><div class="small eh-bk-t" :title="b.desc"><span class="chip">{{ b.type }}</span> {{ b.desc }}</div>
               <div class="tiny muted eh-bk-s" :title="b.measure">{{ b.date.slice(5) }} · {{ b.author }} · {{ ehShort(b.company) }}<span v-if="b.measure"> · 措施：{{ b.measure }}</span><span v-if="b.activity_code"> · 影响 {{ b.activity_short || b.activity_code }}</span></div></div></template>
@@ -213,14 +216,17 @@ const EngBoard = {
       if (this.side === "trend") return "近 14 天分包日志里的人数与机械台数合计。";
       return "近 7 天日志里材料、设备、图纸、外部类阻碍。";
     },
-    trendOk() { return this.p.trend.length > 1 && this.p.trend.some((t) => t.labor || t.machinery); },
+    resourceDays() { return this.p.trend.filter((t) => t.labor_recorded || t.machinery_recorded || t.labor || t.machinery); },
+    resourceEstimated() { return this.resourceDays.some((t) => t.estimated); },
+    latestResources() { return this.resourceDays[this.resourceDays.length - 1]; },
+    trendOk() { return this.resourceDays.length > 0; },
     kpis() {
       const a = this.ov["今日随手记"], w = this.ov["本周确认进度"], ent = todoEntries(this.d.items), late = ent.filter((x) => x.overdue).length;
       return [
-        { k: "note", label: "今日随手记", icon: "mic", value: a ? a.value : "—", sub: a ? a.sub || "" : "", route: "circle" },   // 随手记就是现场圈里的动态，今天的排在最上面
+        { k: "note", label: "今日随手记", icon: "mic", value: a ? a.value : "—", sub: a ? a.sub || "" : "", route: "circle?view=notes_today" },   // 随手记就是现场圈里的动态：带筛选只列今天的随手记，条数与卡上一致（验收 I5）
         { k: "todo", label: "待我处理", icon: "clipboard", value: ent.length, sub: late ? `其中已超期 ${late}` : "按期限排序", tone: late ? "orange" : "", fn: () => this.toTodo() },
         { k: "week", label: "本周确认", icon: "calendar", value: w ? w.value : "—", sub: w ? w.sub || "" : "", fn: () => { this.weekOpen = true; } },   // 就地抽屉：各分包本周确认明细（与分包履约画像同一张表）
-        { k: "qual", label: "质量未闭环", icon: "shield", value: this.q.open || 0, sub: "当前台账" + (this.q.overdue ? ` · 超期 ${this.q.overdue}` : ""), tone: this.q.overdue ? "red" : "green", route: "quality" },
+        { k: "qual", label: "质量未闭环", icon: "shield", value: this.q.open || 0, sub: "当前台账" + (this.q.overdue ? ` · 超期 ${this.q.overdue}` : ""), tone: this.q.overdue ? "red" : "green", route: "quality?only=open" },
       ];
     },
   },
@@ -337,7 +343,7 @@ const SafetyBoard = {
     },
     // 指标卡各自带筛选进安全页（mgr.js 的 FB_ONLY，与首页数字同一口径），不再四张卡进同一页
     kpis() {
-      const k = this.k, nw = this.ov["今日新增隐患"], cn = this.cands.reduce((a, g) => a + g.items.length, 0);
+      const k = this.k, nw = this.ov["今日新增隐患"], cn = todoCounts(this.d.items).candItems;   // 含待办折叠掉的“另有 N 项”，与安全隐患页“AI 候选”同源（验收 I1）
       return [
         { k: "new", label: "今日新增", icon: "plus", value: nw ? nw.value : "—", sub: "已确认 · 按发现日", route: "safety?only=new" },
         { k: "cand", label: "待确认候选", icon: "sparkles", value: cn, sub: "AI 识别，待人工确认", tone: cn ? "orange" : "", fn: () => this.scrollTo("eh-cand") },

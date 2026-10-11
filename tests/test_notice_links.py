@@ -106,9 +106,10 @@ def test_auto_nudge_log_targets_link_only_for_tech(env):
     from app.services import nudge as svc
     # 周确认未提交的催办：技术员 → 周确认页；升级给非技术员时不带“周确认页”这种技术员专属路由
     assert svc._notif_link([{"link": "week", "overdue": 1}], {"role": "tech"}) == {"route": "week", "params": {}}
-    assert svc._notif_link([{"link": "week", "overdue": 1}], {"role": "sub_safety"}) is None
-    assert svc._notif_link([{"link": "home", "overdue": 1}], {"role": "eng_sup"}) is None
-    assert svc._notif_link([{"link": "", "overdue": 1}], {"role": "tech"}) is None
+    # 没有本岗位能打开的单条链接时给本岗位的筛好列表（验收 I8），不再是 None（点了只标已读）
+    assert svc._notif_link([{"link": "week", "overdue": 1}], {"role": "sub_safety"}) == {"route": "shome", "params": {}}
+    assert svc._notif_link([{"link": "home", "overdue": 1}], {"role": "eng_sup"}) == {"route": "chase", "params": {}}
+    assert svc._notif_link([{"link": "", "overdue": 1}], {"role": "tech"}) == {"route": "home", "params": {}}
     # 一条消息合并多件事：取超期最久的那件
     items = [{"link": "finding?id=3", "overdue": 1}, {"link": "finding?id=7", "overdue": 5}]
     assert svc._notif_link(items, {"role": "safety_sup"}) == {"route": "finding", "params": {"id": "7"}}

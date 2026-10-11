@@ -286,7 +286,7 @@ function runAction(a) {
 
 const SimBadge = { template: `<span class="sim-badge" title="仿真数据，仅用于演示">仿真项目 · 不计入应用成效</span>` };
 
-// T-07 演示日标识：演示实例（tools/demo_serve.py）的服务器时钟定在演示日，页头标“演示日 MM-DD”；普通实例的演示时钟接口返回 demo=false，不显示。
+// T-07 演示日标识：演示实例（tools/demo_serve.py）的服务器时钟定在演示日。验收 I16：开发环境信息不上页面，页头不再显示“演示日”标签（demoTag 保留供调试）。
 // 一页里可能不止一个页头组件，只由最先挂载、仍在页面上的那个显示，保证全页只出现一次。
 let DEMO_DAY = null, demoSeq = 0;
 function demoDay() {
@@ -331,7 +331,7 @@ const PageHead = {
   props: { page: String, title: String, purpose: String, steps: String, current: { type: Number, default: -1 }, counts: Array },
   // 页面用途不再常驻一行，收进标题旁的小问号（RJ 10-09）
   template: `<header :class="['ph', {'ph-band': kind === 'band', 'ph-plain': kind === 'plain'}]">
-    <div class="ph-row"><div class="ph-main"><div class="ph-title"><h1>{{ ttl }}</h1><help-tip v-if="pur || note" label="这一页做什么"><template v-if="pur">{{ pur }}</template><span class="htip-note" v-if="note">{{ note }}</span></help-tip><slot name="badge"></slot><span class="chip blue" v-if="demoTag" title="演示实例：服务器时钟定在演示日，数据是演示副本">{{ demoTag }}</span></div>
+    <div class="ph-row"><div class="ph-main"><div class="ph-title"><h1>{{ ttl }}</h1><help-tip v-if="pur || note" label="这一页做什么"><template v-if="pur">{{ pur }}</template><span class="htip-note" v-if="note">{{ note }}</span></help-tip><slot name="badge"></slot></div>
         <div class="ph-meta"><slot name="meta"></slot></div></div>
       <div class="ph-act"><slot name="actions"></slot></div></div>
     <ol class="ph-steps" v-if="list.length" :aria-label="'流程：' + list.join('，')">

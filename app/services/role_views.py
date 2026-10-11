@@ -149,6 +149,12 @@ def _labor_machinery(conn, project_id: int, start: str, end: str) -> list[dict]:
         c = loads(r["content_json"], {})
         d = by_day.setdefault(r["log_date"], {"date": r["log_date"], "labor": 0, "machinery": 0, "down": 0, "logs": 0})
         d["logs"] += 1
+        d["labor_recorded"] = d.get("labor_recorded", False) or any(x.get("count") is not None for x in c.get("labor", []))
+        d["machinery_recorded"] = d.get("machinery_recorded", False) or any(x.get("count") is not None for x in c.get("machinery", []))
+        if c.get("resource_allocation"):
+            d["estimated"] = True
+            d["basis"] = c["resource_allocation"]["basis"]
+            d["machinery_label"] = "进场设备"
         d["labor"] += sum(int(x.get("count") or 0) for x in c.get("labor", []))
         for m in c.get("machinery", []):
             n = int(m.get("count") or 0)

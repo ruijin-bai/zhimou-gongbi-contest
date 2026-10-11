@@ -8,7 +8,7 @@ from statistics import median
 
 from .. import roles as R
 from ..ai import safety_agent
-from ..ai.client import AIError, call_json
+from ..ai.client import AIError, call_json, cause_of
 from ..config import settings
 from ..db import all_, audit, dumps, event, insert, loads, now_iso, one, tx
 from . import findings, p6
@@ -525,6 +525,16 @@ def _dq_checks(conn, lg: dict) -> list[dict]:
     return out
 
 
+def dq_summary(dq: dict | None) -> tuple[str, bool]:
+    """数据审核结论的显示文字与是否由 AI 得出：AI 没跑成、按规则结论的不标“AI 发现”，旧库里带原始报错的说法改成简短说明（验收 I12）。"""
+    if not dq:
+        return "尚无数据审核结论", False
+    s = str(dq.get("summary") or "")
+    if dq.get("source") == "rule" or s.startswith("AI预审不可用"):
+        return (s if dq.get("source") == "rule" else "AI 预审未完成，按规则检查结论"), False
+    return s, True
+
+
 def dq_review(conn, log_id: int, user_id: int | None) -> dict:
     lg = one(conn, "SELECT * FROM logs WHERE id=?", (log_id,))
     checks = _dq_checks(conn, lg)
@@ -542,7 +552,9 @@ def dq_review(conn, log_id: int, user_id: int | None) -> dict:
                         project_id=lg["project_id"], user_id=user_id, max_tokens=400, input_meta={"log_id": log_id})
         ai = res.data
     except AIError as exc:
-        ai = {"risk": mock_risk, "summary": f"AI预审不可用（{exc}），按规则结论", "focus": []}
+        # 原始报错只进日志，页面只写简短原因；source=rule 标明这是规则结论，待办不标“AI 发现”（验收 I12）
+        log.warning("日志 L%s AI 预审失败：%s", log_id, exc)
+        ai = {"risk": mock_risk, "summary": f"AI 预审未完成（{cause_of(exc)}），按规则检查结论", "focus": [], "source": "rule"}
     # 规则发现错误时 AI 不能降级为低风险
     if any(x["level"] == "error" for x in checks):
         ai["risk"] = "high"

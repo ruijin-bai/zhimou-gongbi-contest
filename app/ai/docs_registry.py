@@ -185,7 +185,9 @@ def _sub_text(f: dict) -> str:
             L.append("照片编号：" + "、".join(f"M{i}" for i in f["photos"]))
     elif f["src_type"] == "alert":
         L.append(f"[W{f['src_id']}] {f['date']} 进度预警（已确认属实）：{f['title']}；作业：{_an.fmt(f['activity_code'], f['activity_name'])}")
-        L.append(f"计划完成 {_g(f.get('planned_pct'))}%，实际完成 {_g(f.get('actual_pct'))}%，滞后 {_g(f.get('slip_days'))} 天；计划完工 {f.get('early_finish') or '未知'}，预测完工 {f.get('forecast_finish') or '未知'}")
+        L.append((f"预警判定日 {f['as_of']}：" if f.get("as_of") else "") + f"计划完成 {_g(f.get('planned_pct'))}%，实际完成 {_g(f.get('actual_pct'))}%，滞后 {_g(f.get('slip_days'))} 天；计划完工 {f.get('early_finish') or '未知'}，预测完工 {f.get('forecast_finish') or '未知'}")
+        if f.get("cur_pct") is not None:
+            L.append(f"当前进度：{f['cur_src']}完成 {_g(f['cur_pct'])}%")
     else:
         L.append(f"统计期：{f['since']} 起近 {f['days']} 天；该单位{f['area_name']}类问题 {f['n_problems']} 项，其中未闭环 {f['n_open']} 项")
         for k, v in f["repeat"].items():
@@ -283,8 +285,10 @@ def _rule_sub(kind: str, f: dict) -> dict:
                 + (f"，见照片 {'、'.join('M' + str(i) for i in f['photos'])}" if f["photos"] else "") + "。")
         subject = f"关于{f['area_name']}问题“{f['title'][:30]}”的整改"
     elif f["src_type"] == "alert":
-        fact = (f"[W{f['src_id']}] 作业 {f['activity_code']} {f['activity_name']} 计划完成 {_g(f.get('planned_pct'))}%，实际完成 {_g(f.get('actual_pct'))}%，"
-                f"滞后 {_g(f.get('slip_days'))} 天；预测完工 {f.get('forecast_finish') or '未知'}（计划 {f.get('early_finish') or '未知'}）。该预警已经项目部确认属实。")
+        fact = (f"[W{f['src_id']}] 作业 {f['activity_code']} {f['activity_name']}" + (f"按 {f['as_of']} 判定" if f.get("as_of") else "")
+                + f"计划完成 {_g(f.get('planned_pct'))}%，实际完成 {_g(f.get('actual_pct'))}%，"
+                f"滞后 {_g(f.get('slip_days'))} 天；预测完工 {f.get('forecast_finish') or '未知'}（计划 {f.get('early_finish') or '未知'}）。"
+                + (f"{f['cur_src']}完成 {_g(f['cur_pct'])}%。" if f.get("cur_pct") is not None else "") + "该预警已经项目部确认属实。")
         subject = f"关于作业 {f['activity_code']} 进度滞后的工作联系"
     else:
         rep = "；".join(f"{k} {v} 次" for k, v in f["repeat"].items())

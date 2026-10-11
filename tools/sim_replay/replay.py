@@ -32,7 +32,7 @@ TZ = datetime.now().astimezone().tzinfo
 PASSWORD = "sim12345"
 SUPERVISOR = "Engr. Okafor（监理）"
 COMMENTS = ["收到", "注意安全", "辛苦了", "这段推进得不错", "雨后注意边坡和排水", "明天继续保持", "照片拍得清楚", "注意机械和人员分开作业"]
-GEO = (6.4655, 3.8496)  # 莱基疏港路起点附近（仿真）
+GEO = (6.4655, 3.8496)  # 深水港疏港路起点附近（仿真）
 
 
 def log(*a):
@@ -169,9 +169,9 @@ class Engine:
             if p:
                 pid = p["id"]
             else:
-                old = one(conn, "SELECT id FROM projects WHERE code='LEKKI-SIM'")
+                old = one(conn, "SELECT id FROM projects WHERE code='DEMO-SIM'")
                 if old:  # 旧仿真项目保留，改名并停用其演示账号（腾出 sim_* 账号名给新项目）
-                    conn.execute("UPDATE projects SET name='莱基深水港疏港路（仿真·旧版）' WHERE id=?", (old["id"],))
+                    conn.execute("UPDATE projects SET name='深水港疏港路（仿真·旧版）' WHERE id=?", (old["id"],))
                     for u in conn.execute("SELECT id, username FROM users WHERE project_id=? AND username LIKE 'sim\\_%' ESCAPE '\\'", (old["id"],)).fetchall():
                         u = dict(u)  # 行工厂可能是字典或元组，统一按列名取
                         if not u["username"].endswith("_v1"):
@@ -455,7 +455,7 @@ class Engine:
         from . import xer
         a = self.who("eng")
         text = xer.build(self.truth, dd) if dd else xer.build()
-        name = f"LEKKI-SIM2-{'baseline' if not dd else 'update-' + dd.isoformat()}.xer"
+        name = f"DEMO-SIM2-{'baseline' if not dd else 'update-' + dd.isoformat()}.xer"
         a.post("/api/p6/import", files={"file": (name, text.encode("utf-8"), "application/octet-stream")}, data={"data_date": (dd or self.S.START).isoformat()})
 
     def boq(self):
@@ -868,7 +868,7 @@ class Engine:
 
 
 def reset(data_dir: Path) -> None:
-    """删除新仿真项目（LEKKI-SIM2）的全部业务数据与 sim_* 账号，以便补齐素材后重新回放；不动其它项目。"""
+    """删除新仿真项目（DEMO-SIM2）的全部业务数据与 sim_* 账号，以便补齐素材后重新回放；不动其它项目。"""
     from app.db import connect, init_db
     from . import scenario as S
     init_db()

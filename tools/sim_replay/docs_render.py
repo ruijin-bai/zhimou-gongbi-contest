@@ -53,7 +53,7 @@ def concrete_ticket(t: dict) -> Image.Image:
     d.text((W // 2, 105), t.get("plant_en", "READY-MIX CONCRETE DELIVERY TICKET"), font=_f(F_SONG, 22), fill=(40, 40, 40), anchor="mm")
     d.text((W // 2, 160), "混凝土发货单  Delivery Ticket", font=_f(F_HEI, 36), fill=(20, 20, 20), anchor="mm")
     d.text((60, 215), f"No. {t['ticket_no']}", font=_f(F_SONG, 30), fill=(180, 20, 20), anchor="lm")
-    rows = [("工程名称 Project", "莱基深水港疏港路"), ("浇筑部位 Part", t["part"]), ("强度等级 Grade", t["grade"]),
+    rows = [("工程名称 Project", "深水港疏港路"), ("浇筑部位 Part", t["part"]), ("强度等级 Grade", t["grade"]),
             ("本车方量 Qty(m³)", f"{t['qty']:g}"), ("累计方量 Cum.(m³)", f"{t['cum']:g}"), ("坍落度 Slump(mm)", f"{t['slump']:g}"),
             ("出站时间 Dispatch", t["issued_at"]), ("车号 Truck No.", t["vehicle"]), ("司机 Driver", t.get("driver", "")),
             ("签收人 Received", t["receiver"]), ("备注 Remark", t.get("remark", ""))]
@@ -154,11 +154,11 @@ def as_phone_photo(doc: Image.Image, seed: int, out_w: int = 1600, out_h: int = 
 if __name__ == "__main__":  # 样张
     out = Path(__file__).resolve().parent.parent.parent / "sim_assets" / "docs_sample"
     out.mkdir(parents=True, exist_ok=True)
-    t = {"supplier": "拉各斯泻湖商品混凝土有限公司", "plant_en": "LAGOON READYMIX LTD.  LEKKI BATCHING PLANT", "ticket_no": "LR-0917-0236", "vehicle": "LND 482 XA",
+    t = {"supplier": "沿海泻湖商品混凝土有限公司", "plant_en": "LAGOON READYMIX LTD.  DEMO BATCHING PLANT", "ticket_no": "LR-0917-0236", "vehicle": "LND 482 XA",
          "issued_at": "2026-09-17 15:42", "part": "立交桥 3# 桩基 (水下)", "grade": "C30 水下", "qty": 8.0, "cum": 24.0, "slump": 200, "temp": 29,
          "driver": "Adebayo", "receiver": "钱志远", "remark": "加缓凝剂"}
     as_phone_photo(concrete_ticket(t), 1).save(out / "ticket_sample.jpg", quality=88)
-    r = {"supplier": "Lekki Coastal Steel Supply Ltd.", "ticket_no": "MR-20260915-03", "vehicle": "KJA 731 BC", "issued_at": "2026-09-15",
+    r = {"supplier": "Coastal Steel Supply Ltd.", "ticket_no": "MR-20260915-03", "vehicle": "KJA 731 BC", "issued_at": "2026-09-15",
          "material": "热轧带肋钢筋", "spec": "HRB400E Φ25", "qty": 32.46, "unit": "t", "batch_no": "25H0912-117", "part": "立交桥桩基钢筋笼", "receiver": "钱志远"}
     as_phone_photo(material_receipt(r), 2).save(out / "receipt_sample.jpg", quality=88)
     c = dict(r, ticket_no="QC-2509-4471", items=[("屈服强度 MPa", "≥400", "455"), ("抗拉强度 MPa", "≥540", "612"), ("断后伸长率 %", "≥16", "21.5"), ("最大力总伸长率 %", "≥9", "12.8")])

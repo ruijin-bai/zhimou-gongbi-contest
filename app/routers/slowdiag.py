@@ -17,10 +17,10 @@ def register(app) -> None:
     from ..services import slow_diag as svc
 
     @app.get("/api/alerts/{aid}/slow-diag")
-    def slow_diag(aid: int, user=Depends(M.current_user), conn=Depends(M.db)):
+    def slow_diag(aid: int, run: int = 0, user=Depends(M.current_user), conn=Depends(M.db)):
         if user["role"] not in VIEW:
             raise HTTPException(403, "当前岗位不查看进度预警")
         a = one(conn, "SELECT * FROM alerts WHERE id=? AND project_id=?", (aid, user["project_id"]))
         if not a:
             raise HTTPException(404, "预警不存在")
-        return svc.diagnose(conn, user["project_id"], a["activity_code"], a["activity_name"], user["id"], ai=user["role"] != "leader")
+        return svc.diagnose(conn, user["project_id"], a["activity_code"], a["activity_name"], user["id"], ai=user["role"] != "leader", cached_only=not run)

@@ -6,7 +6,9 @@
   可选：--data-dir data_demo  --port 8650  --host 0.0.0.0（手机同网访问）  --https  --day 2026-09-22  --no-dev-login
 
 启动顺序（G-07①）：先校验库（必须是 demo_copy 做出的演示副本，只含仿真项目；不能是业务数据目录 data/，
-不能占用业务端口 8600/8601；任一不满足退出码 2）→ 强制 ZB_SCHEDULER=0 → time_machine.travel(演示日 + 当前钟点, tick=True)
+不能占用业务端口 8600/8601；任一不满足退出码 2）→ 强制 ZB_SCHEDULER=0 → time_machine.travel(演示日 + 起始钟点, tick=True)
+起始钟点默认 22:45（--time，验收 I13）：演示数据写到演示日晚间（如 22:40），时钟若取当前真实钟点会早于数据，
+出现“确认时间早于发现时间、新随手记排在 17 点记录之后、晚间记录标‘刚刚’”。--time now 沿用旧做法（演示日 + 当前真实钟点）。
 → 在同一进程里启动 uvicorn（不开 reload）。服务器上所有“今天/现在”、响应头 Date 都按演示日走。
 
 AI（D16）：
@@ -30,6 +32,7 @@ if str(ROOT) not in sys.path:  # 允许 python tools/demo_serve.py 直接运行
 from tools import demo_copy as dc  # noqa: E402
 
 DEFAULT_PORT = 8650
+DEFAULT_TIME = "22:45"   # 仿真演示库数据截止到演示日 22:40；起点紧跟其后，留出约 75 分钟才跨到次日
 RESERVED_PORTS = (8600, 8601)           # 业务实例
 KEY_ENV = ("ZB_AI_API_KEY", "ZB_AI_API_KEYS", "ZHIMOU_AI_API_KEY")
 KEY_FILES = ("ai_keys.json", "ai_keys.tmp")
@@ -39,6 +42,7 @@ def parse(argv: list[str] | None = None) -> argparse.Namespace:
     ap = argparse.ArgumentParser(prog="python -m tools.demo_serve", description="启动演示实例（演示副本 + 演示日时钟）")
     ap.add_argument("--data-dir", default=str(ROOT / "data_demo"), help="演示副本目录（python -m tools.demo_copy 制作），默认 data_demo/")
     ap.add_argument("--day", default=dc.DEFAULT_DAY, help=f"演示日，默认 {dc.DEFAULT_DAY}，须与副本一致")
+    ap.add_argument("--time", default=DEFAULT_TIME, help=f"演示时钟的起始钟点 HH:MM，默认 {DEFAULT_TIME}（须晚于演示数据最后一条记录）；now = 当前真实钟点")
     ap.add_argument("--host", default="127.0.0.1", help="默认只本机访问；手机同网访问用 0.0.0.0")
     ap.add_argument("--port", type=int, default=DEFAULT_PORT)
     ap.add_argument("--https", action="store_true", help="自签名证书启用 HTTPS（手机浏览器录音需要；证书生成在副本目录 tls/）")
@@ -111,10 +115,22 @@ def ssl_options(data_dir: Path, *, https: bool, port: int = DEFAULT_PORT) -> dic
     return {"ssl_keyfile": str(tls["key"]), "ssl_certfile": str(tls["cert"])}
 
 
-def start_clock(day: date):
-    import time_machine
+def clock_start(day: date, at: str = DEFAULT_TIME) -> datetime:
+    """演示时钟的起点：演示日 + 起始钟点（默认 23:00，在演示数据截止之后）；at="now" 取当前真实钟点。"""
     real = datetime.now().astimezone()
-    dest = datetime.combine(day, real.time().replace(microsecond=0), tzinfo=real.tzinfo)
+    if at == "now":
+        t = real.time().replace(microsecond=0)
+    else:
+        try:
+            t = datetime.strptime(at, "%H:%M").time()
+        except ValueError as exc:
+            raise dc.CheckError(f"--time 格式不对：{at}（应为 HH:MM 或 now）") from exc
+    return datetime.combine(day, t, tzinfo=real.tzinfo)
+
+
+def start_clock(day: date, at: str = DEFAULT_TIME):
+    import time_machine
+    dest = clock_start(day, at)
     traveller = time_machine.travel(dest, tick=True)
     traveller.start()
     return traveller
@@ -125,6 +141,7 @@ def main(argv: list[str] | None = None) -> int:
     env_file = ROOT / ".env"
     try:
         data_dir, day = preflight(args)
+        clock_start(day, args.time)   # 先校验钟点格式
         if args.real_ai and not env_file.is_file():
             raise dc.CheckError(f"真实 AI 模式要从仓库 .env 导入交融 Key，但没有找到 {env_file}")
     except dc.CheckError as exc:
@@ -142,7 +159,7 @@ def main(argv: list[str] | None = None) -> int:
     configure_env(data_dir, day, real_ai=args.real_ai, env_file=env_file, dev_login=not args.no_dev_login)
     if args.real_ai:
         print(real_ai_banner(data_dir), flush=True)
-    traveller = start_clock(day)
+    traveller = start_clock(day, args.time)
     try:
         import uvicorn
 
@@ -157,7 +174,7 @@ def main(argv: list[str] | None = None) -> int:
         ai = "离线模拟模型（mock）" if st["provider"] == "mock" else f"真实交融模型（{'已就绪' if st['ready'] else '未就绪：' + st.get('reason', '')}）"
         scheme = "https" if args.https else "http"
         print(f"演示实例：{scheme}://{'127.0.0.1' if args.host in ('0.0.0.0', '::') else args.host}:{args.port}", flush=True)
-        print(f"演示日 {day.isoformat()}：服务器时钟定在 {datetime.now().strftime('%Y-%m-%d %H:%M')}，随真实时间走；调度已关闭；AI：{ai}")
+        print(f"演示日 {day.isoformat()}：服务器时钟从 {datetime.now().strftime('%Y-%m-%d %H:%M')} 起走（约 {24 * 60 - datetime.now().hour * 60 - datetime.now().minute} 分钟后跨到次日，演示较长时用 --time 调早，但须晚于数据截止）；调度已关闭；AI：{ai}")
         print(f"数据：{data_dir}。{dc.NOTE}", flush=True)
         ssl = ssl_options(data_dir, https=args.https, port=args.port)
         uvicorn.run(app, host=args.host, port=args.port, log_level="info", **ssl)

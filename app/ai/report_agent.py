@@ -126,6 +126,35 @@ def _canon(n: str) -> str:
         return n
 
 
+def _behind(facts: dict) -> tuple[list[dict], list[dict]]:
+    behind = [p for p in facts.get("progress") or [] if p.get("gap") is not None and p["gap"] < 0]
+    warn = [a for a in facts.get("alerts") or [] if a.get("status") in ("open", "confirmed") and a.get("level") in ("red", "orange")]
+    return behind, warn
+
+
+def stance_fix(narrative: dict, facts: dict) -> list[dict]:
+    """定性守卫（验收 I11）：本期有作业偏差为负、或有未关闭的红橙进度预警时，叙述里不得出现“基本按计划推进”等相反结论。
+    命中的句子删掉；“形象进度”栏补一句系统按表格列出的滞后作业（数字取自表格，引用预警编号）。原地改 narrative，返回核对提示。"""
+    from ..services.facts import CONTRA
+    behind, warn = _behind(facts)
+    if not behind and not warn:
+        return []
+    why = "、".join(x for x in ((f"表格中 {behind[0]['code']} 等作业偏差为负" if behind else ""), ("有未关闭的红橙进度预警" if warn else "")) if x)
+    rule = ("本期滞后作业：" + "；".join(f"{p['code']} {p['name']} 偏差 {p['gap']:g} 个百分点" for p in behind[:6]) + "。" if behind else "") + \
+           ("相关进度预警：" + "、".join(f"[W{a['id']}]" for a in warn[:6]) + "。" if warn else "") + "滞后原因请核对日志后补充。"
+    out = []
+    for key, text in list(narrative.items()):
+        if not isinstance(text, str) or not CONTRA.search(text):
+            continue
+        m = CONTRA.search(text).group(0)
+        keep = "".join(s for s in re.split(r"(?<=[。；;，,\n])", text) if s and not CONTRA.search(s)).rstrip("，,")
+        if keep.strip() and not keep.rstrip().endswith(("。", "；", "\n")):
+            keep += "。"
+        narrative[key] = (keep + rule) if key == "progress" or not keep.strip() else keep
+        out.append({"field": key, "number": "", "issue": f"AI 稿写“{m}”，与{why}矛盾，已删去该句" + ("并改为系统列出的滞后作业" if key == "progress" or not keep.strip() else "") + "，请人工核对"})
+    return out
+
+
 def number_guard(narrative: dict, facts_text: str) -> list[dict]:
     """叙述中出现但统计事实里没有的数字 → 疑似模型自造。引用编号、日期、作业代码、列表序号不算。"""
     allowed = {_canon(n) for n in _NUM.findall(facts_text)}

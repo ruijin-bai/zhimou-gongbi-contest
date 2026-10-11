@@ -684,7 +684,7 @@ def test_page_head_demo_badge_shows_once_per_page():
     d = _ui("demo")
     assert d["both"] == ["演示日 09-22", ""]                          # 同一页两个页头：只有最先挂载的那个显示
     assert d["after"] == "演示日 09-22"                               # 它卸载后由剩下的页头接着显示
-    assert "demoTag" in d["tmpl"]
+    assert "demoTag" not in d["tmpl"]                                 # 验收 I16：开发环境信息不上页面，模板不再渲染演示日标签
     n = _ui("normal")
     assert n["both"] == ["", ""]                                      # 普通实例不显示
     src = (STATIC / "x_ui.js").read_text(encoding="utf-8")
@@ -697,3 +697,14 @@ def test_run_action_opens_file_picker_and_f18_copy():
     assert d["text"]["clicked"] == 1 and d["text"]["focused"] == 1 and d["text"]["scrolled"] == 1
     assert "P6" not in d["week"][1] and "更新进度计划" in d["week"][1]   # F-18①
     assert "确认后提交" not in d["logEdit"] and len(d["logEdit"]) <= 25   # F-18②：审核人看到的副标题不是作者视角
+
+
+def test_demo_clock_starts_after_data_cutoff():
+    """验收 I13：演示时钟默认从演示日 22:45 起走（数据截止 22:40 之后），--time now 沿用真实钟点，格式不对报错。"""
+    from datetime import date as _d
+    t = ds.clock_start(_d(2026, 10, 4))
+    assert (t.date().isoformat(), t.strftime("%H:%M")) == ("2026-10-04", "22:45")
+    assert ds.clock_start(_d(2026, 10, 4), "23:10").strftime("%H:%M") == "23:10"
+    assert ds.clock_start(_d(2026, 10, 4), "now").date().isoformat() == "2026-10-04"
+    with pytest.raises(ds.dc.CheckError):
+        ds.clock_start(_d(2026, 10, 4), "2300")

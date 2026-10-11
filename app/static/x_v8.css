@@ -87,6 +87,8 @@ table.t td { border-bottom: 1px solid var(--line2); }
    每块只放有限摘要；不隐藏模块、不截字、不整体缩放、不用模块内滚动条。
    ====================================================================== */
 .pm-home { --gap: 12px; display: flex; flex-direction: column; gap: var(--gap); }
+/* 数值带单位、较宽的卡（如累计产值“38.4 万 USD”）：副标题另起一行单行显示，不在数值右侧被挤成竖排或截成“上周 12…”（验收 I3） */
+.pm-home .zb-kpi.wide .zb-kpi-s { grid-column: 1 / -1; -webkit-line-clamp: 1; }
 .zb-hero { position: relative; height: 88px; border-radius: 12px; overflow: hidden; color: #fff; flex: none;
   background: linear-gradient(90deg, rgba(14, 36, 92, .96) 0%, rgba(24, 58, 134, .86) 36%, rgba(24, 58, 134, .25) 70%, rgba(24, 58, 134, .05) 100%), url(/static/brand/hero-road.jpg) right center / cover no-repeat; }
 .zb-hero-tx { position: absolute; left: 28px; top: 50%; transform: translateY(-50%); }

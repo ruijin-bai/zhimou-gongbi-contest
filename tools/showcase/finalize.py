@@ -33,7 +33,7 @@ def main():
     conn = sqlite3.connect(data_dir / "zhimou.db", isolation_level=None)
     conn.execute("PRAGMA foreign_keys=OFF")
     conn.execute("BEGIN")
-    pid = conn.execute("SELECT id FROM projects WHERE code LIKE 'LEKKI%' OR code=?", (R.NEW_CODE,)).fetchone()[0]
+    pid = conn.execute("SELECT id FROM projects WHERE code LIKE 'DEMO%' OR code=?", (R.NEW_CODE,)).fetchone()[0]
     # 主项目编码改名（旧版项目若在也一并按文本替换）
     stats = R.rename_db(conn)
     conn.execute("COMMIT")

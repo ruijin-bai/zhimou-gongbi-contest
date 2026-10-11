@@ -117,7 +117,7 @@ _LABELS = [
     ("reviewer", ("复核人", "Reviewer")),
     ("weather", ("天气", "Weather")),
     ("staff_cn", ("中方人员", "Chinese personnel")),
-    ("staff_local", ("属地员工", "Nigerian employees", "当地员工")),
+    ("staff_local", ("属地员工", "local employees", "当地员工")),
     ("equipment", ("进场设备", "Equipment Onsite")),
 ]
 
@@ -178,7 +178,7 @@ def _first(cells: list) -> str:
 
 
 def _line_items(rows: list[list]) -> list[dict]:
-    """简述/计划的文字行：“标段A:”“半岛段：”这类小标题作为分组带到下面各行；“无”跳过；去掉行首编号。"""
+    """简述/计划的文字行：“SEC1:”“示例港区半岛：”这类小标题作为分组带到下面各行；“无”跳过；去掉行首编号。"""
     out, group = [], ""
     for cells in rows:
         t = _first(cells)

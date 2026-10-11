@@ -193,7 +193,7 @@ def test_d3_pm_overview_counts_pending_alerts_and_names_them_apart(world):
     assert crash and crash[0]["status"] == "已确认红色预警"              # 待办里的是另一件事：已确认、待拍板的赶工决定
     assert not set(ov) & {i["status"] for i in d["items"]}
     # “需要知道”里的预警数与概览格是同一个数、同一个名称口径
-    part = next(p for p in d["know"]["parts"] if p["route"] == "progress?tab=alerts")
+    part = next(p for p in d["know"]["parts"] if p["route"] == "progress?tab=alerts&status=open")   # 带筛选进入（验收 I4）
     assert part["n"] == tile["value"] and "待工程主管确认" in part["label"]
 
 

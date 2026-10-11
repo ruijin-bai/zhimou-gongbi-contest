@@ -20,10 +20,10 @@ const Cockpit = {
   <load-state compact v-else-if="!d" :loading="true"></load-state>
   <template v-if="d">
   <div class="zb-kpis n4">
-    <component :is="k.route ? 'button' : 'div'" v-for="k in kpis" :key="k.k" :class="['zb-kpi', k.tone, k.route ? '' : 'ld-static']" @click="k.route && go(k.route, k.params)">
+    <component :is="k.route || k.fn ? 'button' : 'div'" v-for="k in kpis" :key="k.k" :class="['zb-kpi', k.tone, k.route || k.fn ? '' : 'ld-static']" @click="k.route ? go(k.route, k.params) : k.fn && k.fn()">
       <span class="zb-kpi-ic"><ic :n="k.icon"></ic></span>
       <span class="zb-kpi-b"><span class="zb-kpi-l">{{ k.label }}</span><b class="zb-kpi-v">{{ k.value }}</b><span class="zb-kpi-s" :title="k.tip || k.sub">{{ k.sub }}</span></span>
-      <ic n="chevron" class="zb-kpi-go" v-if="k.route"></ic></component></div>
+      <ic n="chevron" class="zb-kpi-go" v-if="k.route || k.fn"></ic></component></div>
 
   <div class="zb-row ld-r2">
     <section class="zb-card ld-port"><div class="zb-ch"><ic n="building"></ic><h2>项目组合</h2><span class="zb-n">{{ projects.length }}</span><span class="grow"></span>
@@ -32,7 +32,7 @@ const Cockpit = {
         <tbody><tr v-for="p in rows" :key="p.id" :class="{on: p.current}"><td class="ld-pn"><b :title="p.name">{{ p.name }}</b><small v-if="p.sim">仿真项目</small></td>
           <template v-if="p.current"><td><span :class="['chip', prog.tone]">{{ prog.text }}</span></td><td class="r">{{ q.open || 0 }}</td>
             <td class="r"><b :class="{red: s.overdue}">{{ s.open || 0 }}</b></td><td class="r">{{ out.record }}</td><td class="r">{{ out.approved }}</td>
-            <td class="r"><a class="zb-link" @click="go('progress', {tab: 'alerts'})">进度预警 <ic n="chevron"></ic></a></td></template>
+            <td class="r"><a class="zb-link" @click="go('progress', {tab: 'alerts', status: 'confirmed'})">已确认预警 {{ alertN.all }} <ic n="chevron"></ic></a></td></template>
           <template v-else><td colspan="5" class="tiny muted">数据按项目分开查看，此处不做跨项目估算</td>
             <td class="r"><button class="zb-link" :disabled="busy" @click="switchTo(p)">切换查看 <ic n="chevron"></ic></button></td></template></tr></tbody></table>
       <div class="ld-none" v-if="projects.length < 2"><ic n="file"></ic><b>其他项目尚未接入</b><small>接入后在此逐项目列出，不做估算或虚构对比</small></div></section>
@@ -41,11 +41,11 @@ const Cockpit = {
         <span :class="['zb-src', brief && brief.source === 'ai' ? 'ai' : '']">{{ briefLabel }}<help-tip v-if="briefNote || stale" :text="[stale ? staleNote : '', briefNote].filter(Boolean).join('。')"></help-tip></span></div>
       <div class="ld-fi" v-for="(it, i) in shownFocus" :key="i"><span :class="['lv-dot', it.level]"></span>
         <div class="ld-ft"><b><em v-if="it.sys" class="zb-sys">{{ it.sys }}</em>[{{ it.area }}] {{ it.title }}</b><small :title="it.detail + (it.action ? ' → ' + it.action : '')">{{ it.detail }}<template v-if="it.action"> → {{ it.action }}</template></small></div>
-        <a class="zb-link" v-if="it.area === '进度'" @click="go('progress', {tab: 'alerts'})">查看</a></div>
+        <a class="zb-link" v-if="it.area === '进度'" @click="go('progress', {tab: 'alerts', status: 'confirmed'})">查看</a></div>
       <div class="pm-more" v-if="focus.length > LD_SHOW"><button class="zb-link" @click="all = true">查看全部 {{ focus.length }} 项 <ic n="chevron"></ic></button></div>
       <zb-drawer v-if="all" :title="'需关注事项 · ' + focus.length + ' 项'" @close="all = false"><zb-paged :items="focus" :size="10" :m-size="6" unit="项" :fit="false"><template #default="{ item: it }"><div class="ld-fi"><span :class="['lv-dot', it.level]"></span>
         <div class="ld-ft"><b><em v-if="it.sys" class="zb-sys">{{ it.sys }}</em>[{{ it.area }}] {{ it.title }}</b><small :title="it.detail + (it.action ? ' → ' + it.action : '')">{{ it.detail }}<template v-if="it.action"> → {{ it.action }}</template></small></div>
-        <a class="zb-link" v-if="it.area === '进度'" @click="go('progress', {tab: 'alerts'})">查看</a></div></template></zb-paged></zb-drawer>
+        <a class="zb-link" v-if="it.area === '进度'" @click="go('progress', {tab: 'alerts', status: 'confirmed'})">查看</a></div></template></zb-paged></zb-drawer>
       <div class="zb-empty" v-if="!focus.length">当前没有需关注的进度、质量、安全事项。</div></section>
   </div>
 
@@ -55,11 +55,11 @@ const Cockpit = {
           <div class="pm-ms-f" :title="m.prob_text">模拟 P50 {{ m.p50 || '—' }} · 按期概率估计 {{ m.prob_label || probText(m.on_time_prob) }}<template v-if="m.prob_detail"> · {{ m.prob_detail }}</template></div></div></li></ol>
         <div class="zb-empty" v-else>还没有里程碑预测，项目部导入 P6 计划并运行预测后显示。</div></div></section>
 
-    <section :class="['zb-card', {shut: shut('q')}]"><div class="zb-ch" @click="tog('q')"><ic n="shield"></ic><h2>质量情况</h2><span class="grow"></span><span class="tiny muted">当前台账</span></div>
+    <section id="ld-q" :class="['zb-card', {shut: shut('q')}]"><div class="zb-ch" @click="tog('q')"><ic n="shield"></ic><h2>质量情况</h2><span class="grow"></span><span class="tiny muted">当前台账</span></div>
       <div class="zb-body"><div class="pm-q-zero" v-if="!q.open"><span class="pm-q-ok"><ic n="check-circle"></ic></span><div><b>质量未闭环 0</b><div class="tiny muted">当前台账没有未闭环质量问题</div></div></div>
         <div class="pm-q-nums" v-else><div><b>{{ q.open }}</b><span>未闭环</span></div><div :class="{red: q.overdue}"><b>{{ q.overdue || 0 }}</b><span>超期</span></div><div><b>{{ q.reminders || 0 }}</b><span>待执行质控提醒</span></div></div></div></section>
 
-    <section :class="['zb-card', {shut: shut('s')}]"><div class="zb-ch" @click="tog('s')"><ic n="helmet"></ic><h2>安全情况</h2><span class="grow"></span><span class="tiny muted">累计闭环 {{ s.resolved || 0 }}</span></div>
+    <section id="ld-s" :class="['zb-card', {shut: shut('s')}]"><div class="zb-ch" @click="tog('s')"><ic n="helmet"></ic><h2>安全情况</h2><span class="grow"></span><span class="tiny muted">累计闭环 {{ s.resolved || 0 }}</span></div>
       <div class="zb-body"><table class="ld-st" v-if="comps.length"><thead><tr><th>分包单位</th><th class="r">未闭环</th><th class="r">超期</th><th class="r">高风险</th></tr></thead>
           <tbody><tr v-for="c in comps" :key="c.company"><td :title="c.company">{{ unit(c.company) }}</td><td class="r">{{ c.safety_open }}</td>
             <td class="r"><b :class="{red: c.safety_overdue}">{{ c.safety_overdue }}</b></td><td class="r">{{ c.safety_high }}</td></tr></tbody></table>
@@ -91,10 +91,10 @@ const Cockpit = {
       const a = this.alertN, n = this.projects.length;
       return [
         { k: "proj", label: "已接入项目", icon: "building", value: n, tone: "", sub: n > 1 ? "当前查看：" + ((store.me.project || {}).name || "") : "其他项目尚未接入" },
-        { k: "prog", label: "进度红色预警", icon: "alert", value: a.red, tone: a.red ? "red" : "", route: "progress", params: { tab: "alerts" },
+        { k: "prog", label: "进度红色预警", icon: "alert", value: a.red, tone: a.red ? "red" : "", route: "progress", params: { tab: "alerts", status: "confirmed", level: "red" },
           sub: this.scope + `已确认 · 全部 ${a.all}`, tip: a.all ? `全部已确认进度预警 ${a.all}：红 ${a.red} · 橙 ${a.orange} · 黄 ${a.yellow}` : "" },
-        { k: "qual", label: "质量未闭环", icon: "shield", value: this.q.open || 0, tone: this.q.overdue ? "red" : "green", sub: this.scope + "当前台账" + (this.q.overdue ? ` · 超期 ${this.q.overdue}` : "") },
-        { k: "safe", label: "安全未闭环", icon: "helmet", value: this.s.open || 0, tone: this.s.overdue ? "orange" : "", sub: this.scope + `高风险 ${this.s.high || 0} · 超期 ${this.s.overdue || 0}` },
+        { k: "qual", label: "质量未闭环", icon: "shield", value: this.q.open || 0, tone: this.q.overdue ? "red" : "green", sub: this.scope + "当前台账" + (this.q.overdue ? ` · 超期 ${this.q.overdue}` : ""), fn: () => this.reveal("q") },
+        { k: "safe", label: "安全未闭环", icon: "helmet", value: this.s.open || 0, tone: this.s.overdue ? "orange" : "", sub: this.scope + `高风险 ${this.s.high || 0} · 超期 ${this.s.overdue || 0}`, fn: () => this.reveal("s") },
       ];
     },
     // 产值：上一个完整周。周记录与系统核定是两个口径，分两列写，不相加
@@ -137,6 +137,8 @@ const Cockpit = {
     unit(c) { return (c || "未登记单位").replace(/[（(].*?[）)]/g, ""); },   // 简称：“甲分包单位（路基桥梁）”→“甲分包单位”
     shut(k) { return this.narrow && !this.opened[k]; },
     tog(k) { if (this.narrow) this.opened = { ...this.opened, [k]: !this.opened[k] }; },
+    // 质量、安全卡：领导没有台账页，点卡滚到本页对应分区（手机上顺带展开）
+    reveal(k) { if (this.narrow) this.opened = { ...this.opened, [k]: true }; this.$nextTick(() => { const el = document.getElementById("ld-" + k); if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); } }); },
     async load() {
       try {
         const [d, comps, al] = await Promise.all([GET("/api/cockpit"), GET("/api/companies"), GET("/api/alerts?status=confirmed")]);

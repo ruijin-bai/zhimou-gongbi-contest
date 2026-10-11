@@ -24,6 +24,7 @@ from . import facts as facts_svc
 from . import features as feat_svc
 from . import findings as find_svc
 from . import logs as log_svc
+from . import site_agents
 from . import p6, role_views, site_agents
 
 log = logging.getLogger("zhimou.todo")
@@ -38,7 +39,7 @@ BOUNDARY = "AI 只整理线索与依据，办理结论由人员确认。"
 # AI 候选确认、放行清单、扫码认领、材料疑点与票据、隐蔽验收资料、预警“属实/误报”反馈（alert）
 PM_FORBIDDEN = frozenset({"log_review", "log_low", "log_missing", "week_missing", "data_gap", "mapping",
                           "candidate", "gate", "gate_more", "quick", "ticket_risk", "ticket_pending", "conceal_gap", "conceal_todo", "conceal_result", "alert",
-                          "letter"})   # letter：致分包文书的签收/回复/接受，是执行层事项
+                          "letter", "scan_failed"})   # letter：致分包文书的签收/回复/接受，是执行层事项；scan_failed：照片识别失败重试
 # 项目经理待办的白名单（D7、D19；claim_notice 为索赔通知时效剩 3 天升级，用户 10-08 已定）：赶工决定（crash，不与预警反馈 alert 重名）、升级到经理的高风险隐患、周报发布、本人的例会行动项
 PM_ALLOWED = frozenset({"crash", "escalated", "report", "meeting", "claim_notice"})
 READONLY_ROLES = frozenset({"leader", "admin"})
@@ -107,6 +108,7 @@ def _cap(rows: list[dict], source: str, total: int | None, noun: str, route: str
     if total > len(out):
         out.append(item(source + "_more", "more", module, f"另有 {total - len(out)} 项{noun}", "以上按紧急程度列出前几项，其余请到对应页面查看", "更多", tone="gray",
                         label="查看全部", route=route))
+        out[-1]["more_n"] = total - len(out) + 1   # 折叠掉的条数：首页指标按“列出的 + 折叠的”计，与台账同源（验收 I1）
     return out
 
 
@@ -141,6 +143,20 @@ def _default_assignees(c: Ctx, ids: list[int]) -> dict[int, int | None]:
         except Exception:  # noqa: BLE001 — 默认值算不出来不影响待办，由人选择
             log.exception("候选默认责任人计算失败：%s", f["id"])
     return out
+
+
+def src_scan_failed(c: Ctx) -> list[dict]:
+    """随手拍识别失败或超时的照片（验收 I10）：合成一条，写明原因与下一步，就地“重新识别”。"""
+    from . import quick as quick_svc
+    rows = quick_svc.scan_problems(c.conn, c.user)
+    if not rows:
+        return []
+    failed = sum(1 for r in rows if r["safety_status"] == "failed")
+    why = "；".join(x for x in (f"{failed} 张识别失败" if failed else "", f"{len(rows) - failed} 张识别超过 {quick_svc.SCAN_STUCK_MIN} 分钟仍无结果" if len(rows) > failed else "") if x)
+    return [item("scan_failed", "all", "safety", f"{len(rows)} 张现场照片没有识别出结果", why + "。照片已保存，可重新识别；仍失败请稍后再试或联系系统管理员",
+                 "识别失败", tone="orange", label="重新识别",
+                 quick=[{"label": "重新识别", "primary": True, "api": {"method": "POST", "url": "/api/quick/media-rescan", "body": {"ids": [r["id"] for r in rows]}},
+                         "done": "已重新开始识别，结果出来后在这里和消息里查看"}])]
 
 
 def src_candidates(c: Ctx) -> list[dict]:
@@ -471,9 +487,10 @@ def _know(c: Ctx) -> dict | None:
     _, rest = _escalation(c)
     a = brief_svc.counts(c.conn, c.pid, c.today)["alerts"]       # 与简报“红 x 橙 y”、概览“待确认红橙预警”同一来源（D-1）
     alerts = a["red"] + a["orange"]
-    parts = [{"source": "know_alert", "label": "待工程主管确认的红橙预警", "n": alerts, "route": "progress?tab=alerts"},
-             {"source": "know_safety", "label": "未升级的高风险隐患", "n": sum(1 for f in rest if f["agent"] == "safety"), "route": "safety"},
-             {"source": "know_quality", "label": "未升级的高风险质量问题", "n": sum(1 for f in rest if f["agent"] == "quality"), "route": "quality"}]
+    # 各项带筛选进入（验收 I4）：预警看“待确认”，隐患/质量看“高风险”
+    parts = [{"source": "know_alert", "label": "待工程主管确认的红橙预警", "n": alerts, "route": "progress?tab=alerts&status=open"},
+             {"source": "know_safety", "label": "未升级的高风险隐患", "n": sum(1 for f in rest if f["agent"] == "safety"), "route": "safety?only=high"},
+             {"source": "know_quality", "label": "未升级的高风险质量问题", "n": sum(1 for f in rest if f["agent"] == "quality"), "route": "quality?only=high"}]
     parts = [p for p in parts if p["n"] and p["source"] not in PM_FORBIDDEN and brief_svc.scope_ok(p["label"])]
     return {"n": sum(p["n"] for p in parts), "parts": parts}
 
@@ -518,8 +535,9 @@ def src_log_review(c: Ctx) -> list[dict]:
     out = []
     for _, l, dq, risk, flags in show:
         name = {"high": "高风险", "medium": "待核实", "none": "未预审"}[risk]
-        out.append(item("log_review", l["id"], "site", f"{l['author']}（{l['company'] or '未标注单位'}）{l['log_date'][5:]} {what}", (dq["summary"] if dq else "尚无数据审核结论") + (f"；{flags} 处提示" if flags else ""),
-                        name, tone="red" if risk == "high" else "orange" if risk == "medium" else "gray", label="去预审", route=f"log?id={l['id']}", ai=bool(dq)))
+        summary, by_ai = site_agents.dq_summary(dq)
+        out.append(item("log_review", l["id"], "site", f"{l['author']}（{l['company'] or '未标注单位'}）{l['log_date'][5:]} {what}", summary + (f"；{flags} 处提示" if flags else ""),
+                        name, tone="red" if risk == "high" else "orange" if risk == "medium" else "gray", label="去预审", route=f"log?id={l['id']}", ai=by_ai))
     out = _cap(out, "log_review", len(show), "份日志待预审", "logs", "site")
     if low_ids:
         out.append(item("log_low", "all", "site", f"低风险日志 {len(low_ids)} 份可一键通过", "数据审核 Agent 已逐份预审，这些日志没有发现问题", "低风险", tone="green",
@@ -814,10 +832,10 @@ def src_quick(c: Ctx) -> list[dict]:
 # ============================================================================ 汇总
 
 SOURCES: dict[str, list] = {
-    "tech": [src_my_findings, src_letters, src_tech_week, src_gate, src_site_quality, src_meetings],
-    "sub_safety": [src_candidates, src_my_findings, src_letters, src_quick, src_meetings],
+    "tech": [src_my_findings, src_letters, src_tech_week, src_gate, src_site_quality, src_meetings, src_scan_failed],
+    "sub_safety": [src_candidates, src_scan_failed, src_my_findings, src_letters, src_quick, src_meetings],
     "eng_sup": [src_decisions, src_quality, src_log_review, src_week_missing, src_data_gap, src_gate, src_mapping, src_site_quality, src_reports, src_claim_notice, src_letters, src_meetings],
-    "safety_sup": [src_candidates, src_safety_board, src_letters, src_quick, src_meetings],
+    "safety_sup": [src_candidates, src_scan_failed, src_safety_board, src_letters, src_quick, src_meetings],
     # 项目经理只留拍板项（D7）与本人的例会行动项（D19）
     "manager": [src_crash, src_escalated, src_claim_notice, src_reports, src_meetings],
 }

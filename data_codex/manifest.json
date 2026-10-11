@@ -1,0 +1,227 @@
+{
+  "seed": 20261011,
+  "start": "2026-01-05",
+  "cutoff": "2026-10-04",
+  "demo": "2026-10-11",
+  "end": "2027-03-04",
+  "boq_total": 19690445.1,
+  "actual_usd": 10951814.01,
+  "progress_pct": 55.61994131864495,
+  "counts": {
+    "projects": 3,
+    "users": 23,
+    "p6_imports": 9,
+    "activities": 863,
+    "relations": 945,
+    "media": 177,
+    "logs": 938,
+    "log_progress": 18857,
+    "review_fields": 419,
+    "ai_runs": 0,
+    "alerts": 18,
+    "notifications": 28,
+    "reports": 8,
+    "events": 0,
+    "audit": 98,
+    "notes": 351,
+    "findings": 62,
+    "boq_items": 122,
+    "boq_map": 122,
+    "output_records": 42,
+    "briefs": 1,
+    "knowledge": 8,
+    "forecasts": 1,
+    "feed_likes": 144,
+    "feed_comments": 96,
+    "ai_settings": 1,
+    "ai_keys": 0,
+    "ai_usage": 0,
+    "alert_tags": 0,
+    "backtests": 0,
+    "feed_agent_notes": 0,
+    "circle_notices": 6,
+    "circle_notice_reads": 36,
+    "circle_picks": 0,
+    "note_classify": 0,
+    "meetings": 6,
+    "meeting_items": 24,
+    "conceal_records": 24,
+    "conceal_templates": 0,
+    "contract_docs": 0,
+    "contract_clauses": 0,
+    "digest_cache": 0,
+    "note_followup": 0,
+    "gate_items": 8,
+    "gate_class": 8,
+    "claim_notices": 0,
+    "gongbi_docs": 23,
+    "sub_letters": 10,
+    "nudge_log": 28,
+    "ask_pins": 0,
+    "daily_jobs": 0,
+    "p6_calendars": 7,
+    "p6_act_ext": 861,
+    "precontrol_cache": 0,
+    "quick_tokens": 1,
+    "quick_submissions": 9,
+    "quick_idem": 0,
+    "quick_settings": 0,
+    "voice_pending": 117,
+    "site_summaries": 0,
+    "claim_packs": 0,
+    "slowdiag_cache": 0,
+    "feed_favs": 0,
+    "feed_follows": 0,
+    "feed_reposts": 0,
+    "feed_highlights": 0,
+    "feed_reads": 48,
+    "feed_summaries": 0,
+    "dm_threads": 8,
+    "dm_messages": 48,
+    "dm_reads": 0,
+    "dm_files": 0,
+    "subprofile_cache": 0,
+    "talk_groups": 6,
+    "talk_posts": 30,
+    "talk_comments": 30,
+    "talk_likes": 90,
+    "pours": 12,
+    "material_batches": 18,
+    "tickets": 66,
+    "specimens": 12,
+    "alert_decisions": 13,
+    "xlsx_imports": 0
+  },
+  "integrity": "ok",
+  "foreign_keys": "ok",
+  "external_ai_calls": 0,
+  "media_kind": "locally generated synthetic scenes/documents, not field evidence",
+  "accounts": [
+    {
+      "username": "sim_zhao",
+      "role": "tech",
+      "name": "林望舒",
+      "password": "SimRoad2026!"
+    },
+    {
+      "username": "sim_safe_a",
+      "role": "sub_safety",
+      "name": "孟泽安",
+      "password": "SimRoad2026!"
+    },
+    {
+      "username": "sim_eng",
+      "role": "eng_sup",
+      "name": "苏景澄",
+      "password": "SimRoad2026!"
+    },
+    {
+      "username": "sim_safety",
+      "role": "safety_sup",
+      "name": "沈予宁",
+      "password": "SimRoad2026!"
+    },
+    {
+      "username": "sim_pm",
+      "role": "manager",
+      "name": "陆知远",
+      "password": "SimRoad2026!"
+    },
+    {
+      "username": "sim_leader",
+      "role": "leader",
+      "name": "顾清和",
+      "password": "SimRoad2026!"
+    },
+    {
+      "username": "sim_admin",
+      "role": "admin",
+      "name": "程砚秋",
+      "password": "SimRoad2026!"
+    },
+    {
+      "username": "sim_bridge",
+      "role": "tech",
+      "name": "许庭舟",
+      "password": "SimRoad2026!"
+    },
+    {
+      "username": "sim_pave",
+      "role": "tech",
+      "name": "宋雨棠",
+      "password": "SimRoad2026!"
+    },
+    {
+      "username": "sim_safe_b",
+      "role": "sub_safety",
+      "name": "贺星遥",
+      "password": "SimRoad2026!"
+    },
+    {
+      "username": "sim_safe_c",
+      "role": "sub_safety",
+      "name": "唐若川",
+      "password": "SimRoad2026!"
+    },
+    {
+      "username": "sim_survey",
+      "role": "tech",
+      "name": "季明初",
+      "password": "SimRoad2026!"
+    },
+    {
+      "username": "sim_quality",
+      "role": "eng_sup",
+      "name": "余青岚",
+      "password": "SimRoad2026!"
+    },
+    {
+      "username": "sim_lab",
+      "role": "tech",
+      "name": "温见山",
+      "password": "SimRoad2026!"
+    },
+    {
+      "username": "sim_material",
+      "role": "tech",
+      "name": "白云珂",
+      "password": "SimRoad2026!"
+    },
+    {
+      "username": "sim_worker1",
+      "role": "tech",
+      "name": "陈书野",
+      "password": "SimRoad2026!"
+    },
+    {
+      "username": "sim_worker2",
+      "role": "tech",
+      "name": "江望尘",
+      "password": "SimRoad2026!"
+    },
+    {
+      "username": "sim_worker3",
+      "role": "tech",
+      "name": "宁晓舟",
+      "password": "SimRoad2026!"
+    },
+    {
+      "username": "sim_plant",
+      "role": "tech",
+      "name": "林星沐",
+      "password": "SimRoad2026!"
+    },
+    {
+      "username": "sim_foreman",
+      "role": "tech",
+      "name": "夏文笙",
+      "password": "SimRoad2026!"
+    },
+    {
+      "username": "sim_qa",
+      "role": "eng_sup",
+      "name": "周序安",
+      "password": "SimRoad2026!"
+    }
+  ]
+}

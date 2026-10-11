@@ -61,7 +61,7 @@ async def lifespan(_app):
     yield
 
 
-app = FastAPI(title="智眸工笔", version=VERSION, docs_url=None, redoc_url=None, lifespan=lifespan)
+app = FastAPI(title="智眸工笔", version=VERSION, docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)   # 接口清单不对外（验收 D13）
 
 
 # ----------------------------------------------------------------------------- 基础设施
@@ -160,6 +160,13 @@ def need(cap: str):
     return dep
 
 
+def log_writer(user=Depends(current_user)) -> dict:
+    """施工日志/周进度确认的写接口：只有技术员（roles.LOG_WRITERS）；领导、经理、主管、管理员只读或审核。"""
+    if user["role"] not in roles_mod.LOG_WRITERS:
+        raise HTTPException(403, "只有技术员填写施工日志与周进度确认")
+    return user
+
+
 def viewer(user=Depends(current_user)) -> dict:
     """项目级汇总数据：港湾各角色、领导和管理员可看；分包单位只看自己单位范围（走专门接口）。"""
     if user["role"] not in roles_mod.VIEW_ROLES:
@@ -239,7 +246,7 @@ def dev_accounts(request: Request, conn=Depends(db)):
         return []
     rows = all_(conn, "SELECT u.id, u.username, u.name, u.role, u.company, p.name AS project, p.code AS project_code FROM users u "
                       "LEFT JOIN projects p ON p.id=u.project_id WHERE u.active=1 ORDER BY u.id")
-    # ZB_DEV_PROJECT=项目编码：快捷登录只列这个项目的账号（如 SIM-ROAD）；库里没有该项目的账号时照常列全部
+    # ZB_DEV_PROJECT=项目编码：快捷登录只列这个项目的账号（如 DEMO/XX/0000/001）；库里没有该项目的账号时照常列全部
     code = os.environ.get("ZB_DEV_PROJECT", "").strip()
     rows = [r for r in rows if r["project_code"] == code] or rows if code else rows
     order = {r: i for i, r in enumerate(roles_mod.ROLE_ORDER)}
@@ -573,12 +580,12 @@ def list_logs(status: str | None = None, date_from: str | None = None, date_to: 
                                                 or r["photos"] or (r["period"] == "day" and r["notes"]))
         out.append({**r, "empty": bool(empty), "summary": c.get("summary", ""), "issues": len(c.get("issues", [])),
                     "flags": sum(1 for x in checks if x["level"] in ("error", "warn")),
-                    "dq_risk": dq["risk"] if dq else None, "dq_score": dq["score"] if dq else None, "dq_summary": dq["summary"] if dq else ""})
+                    "dq_risk": dq["risk"] if dq else None, "dq_score": dq["score"] if dq else None, "dq_summary": site_agents.dq_summary(dq)[0] if dq else ""})
     return out
 
 
 @app.post("/api/logs")
-def create_log(body: LogCreate, user=Depends(current_user), conn=Depends(db)):
+def create_log(body: LogCreate, user=Depends(log_writer), conn=Depends(db)):
     row = log_svc.ensure_log(conn, user, body.log_date, body.mode, body.period)
     return log_view(conn, row, user)
 
@@ -589,7 +596,7 @@ def get_log(log_id: int, user=Depends(current_user), conn=Depends(db)):
 
 
 @app.delete("/api/logs/{log_id}/photos/{mid}")
-def detach(log_id: int, mid: int, user=Depends(current_user), conn=Depends(db)):
+def detach(log_id: int, mid: int, user=Depends(log_writer), conn=Depends(db)):
     row = _log_or_404(conn, log_id, user)
     log_svc.detach_photo(conn, row, mid, user)
     return log_view(conn, log_svc.get_log(conn, log_id), user)
@@ -601,7 +608,7 @@ class DraftIn(BaseModel):
 
 
 @app.post("/api/logs/{log_id}/draft")
-def draft(log_id: int, body: DraftIn, user=Depends(current_user), conn=Depends(db)):
+def draft(log_id: int, body: DraftIn, user=Depends(log_writer), conn=Depends(db)):
     row = _log_or_404(conn, log_id, user)
     return log_view(conn, log_svc.draft(conn, row, user, body.voice_text, body.weather), user)
 
@@ -614,7 +621,7 @@ class LogSave(BaseModel):
 
 
 @app.put("/api/logs/{log_id}")
-def save_log(log_id: int, body: LogSave, user=Depends(current_user), conn=Depends(db)):
+def save_log(log_id: int, body: LogSave, user=Depends(log_writer), conn=Depends(db)):
     row = _log_or_404(conn, log_id, user)
     saved = log_svc.save(conn, row, user, body.content, body.version, body.weather, body.voice_text)
     if saved["mode"] == "ai":
@@ -662,7 +669,7 @@ def _detect_bg(project_id: int, user_id: int | None) -> None:
 
 
 @app.post("/api/logs/{log_id}/submit")
-def submit_log(log_id: int, body: SubmitIn, bg: BackgroundTasks, user=Depends(current_user), conn=Depends(db)):
+def submit_log(log_id: int, body: SubmitIn, bg: BackgroundTasks, user=Depends(log_writer), conn=Depends(db)):
     row = _log_or_404(conn, log_id, user)
     saved = log_svc.submit(conn, row, user, body.version, body.active_seconds, body.decisions)
     if saved["mode"] == "ai":
@@ -896,6 +903,20 @@ def _notice_enrich(conn, user: dict, rows: list[dict]) -> None:
                 r["link"] = nudge_svc._notif_link([{"link": g["link"], "overdue": 0}], user)
             elif r["title"] == "请确认本周进度" and user["role"] == "tech":
                 r["link"] = {"route": "week", "params": {}}
+            elif r["title"].startswith("放行预警：") and r["title"][5:].split(" ")[0]:
+                r["link"] = {"route": "gate", "params": {"open": r["title"][5:].split(" ")[0]}}
+            elif r["title"].startswith("材料与砼提醒"):
+                r["link"] = {"route": "tickets", "params": {"tab": "pending"} if "待确认" in r["title"] else {}}
+            elif r["title"].startswith("公告："):
+                nt = one(conn, "SELECT body FROM circle_notices WHERE project_id=? AND title=? ORDER BY id DESC LIMIT 1", (user["project_id"], r["title"][3:]))
+                if nt:
+                    r["body"] = nt["body"]   # 旧公告通知只存了前 80 字：补全文，在消息里点开可读
+                if user["role"] in roles_mod.CIRCLE_ROLES:
+                    r["link"] = {"route": "circle", "params": {}}
+            elif r["title"].endswith(" 给你发来私信"):
+                peer = one(conn, "SELECT id FROM users WHERE project_id=? AND name=? ORDER BY id LIMIT 1", (user["project_id"], r["title"][:-7]))
+                if peer:
+                    r["link"] = {"route": "circle", "params": {"dm": str(peer["id"])}}
             elif r["title"].startswith(_FINDING_TITLE_PREFIXES + _NUDGE_TITLE_PREFIXES) and _title_tail(r["title"]):
                 tail = _title_tail(r["title"])
                 f = one(conn, "SELECT id FROM findings WHERE project_id=? AND substr(title, 1, ?)=? ORDER BY (assignee_id=?) DESC, id DESC LIMIT 1",
@@ -976,6 +997,12 @@ def notifications(limit: int = 100, offset: int = 0, user=Depends(current_user),
 
 def _unread_count(conn, uid: int) -> int:
     return one(conn, "SELECT COUNT(*) n FROM notifications WHERE user_id=? AND read_at IS NULL", (uid,))["n"]
+
+
+@app.get("/api/notifications/unread")
+def unread_count(user=Depends(current_user), conn=Depends(db)):
+    """消息页页头与铃铛同一个数（全部未读，不限于已取到的那一页，验收 I7）。"""
+    return {"unread": _unread_count(conn, user["id"])}
 
 
 @app.post("/api/notifications/read")
@@ -1171,13 +1198,13 @@ class AnswerIn(BaseModel):
 
 
 @app.post("/api/logs/{log_id}/answer")
-def answer_q(log_id: int, body: AnswerIn, user=Depends(current_user), conn=Depends(db)):
+def answer_q(log_id: int, body: AnswerIn, user=Depends(log_writer), conn=Depends(db)):
     row = _log_or_404(conn, log_id, user)
     return log_view(conn, log_svc.answer(conn, row, user, body.index, body.answer), user)
 
 
 @app.post("/api/logs/{log_id}/carry")
-def carry(log_id: int, user=Depends(current_user), conn=Depends(db)):
+def carry(log_id: int, user=Depends(log_writer), conn=Depends(db)):
     row = _log_or_404(conn, log_id, user)
     return log_view(conn, log_svc.carry_over(conn, row, user), user)
 
@@ -1309,7 +1336,13 @@ def quality_rem(user=Depends(need("site_quality")), conn=Depends(db)):
 
 @app.get("/api/schedule/forecast")
 def get_forecast(user=Depends(viewer), conn=Depends(db)):
-    return sched_svc.latest_forecast(conn, user["project_id"]) or {"none": True}
+    fc = sched_svc.latest_forecast(conn, user["project_id"])
+    if not fc:
+        return {"none": True}
+    # 预测依据的 P6 数据日期与当前 P6 批次不一致（如演示库截掉了后来的批次）：标出来，页面先说明情况变化（验收 I14、易错项 AI-09）
+    imp = p6_svc.current_import(conn, user["project_id"])
+    cur = imp["data_date"] if imp else None
+    return {**fc, "current_data_date": cur, "stale_p6": bool(cur and fc.get("data_date") and fc["data_date"] != cur)}
 
 
 @app.post("/api/schedule/forecast")
@@ -1539,7 +1572,7 @@ class OrganizeIn(BaseModel):
 
 
 @app.post("/api/logs/organize")
-def organize_now(body: OrganizeIn, user=Depends(current_user), conn=Depends(db)):
+def organize_now(body: OrganizeIn, user=Depends(log_writer), conn=Depends(db)):
     lg = log_svc.organize_day(conn, user, body.day or date.today().isoformat(), force=True)
     if not lg:
         raise HTTPException(400, "今天还没有随手记")
@@ -1721,7 +1754,7 @@ def get_feed(before: str | None = None, limit: int = 20, mine: int = 0, view: st
     if user["role"] == "admin":
         raise HTTPException(403, "系统管理员不参与现场动态")
     geo = {"place": place.strip()[:30], "lat": lat, "lon": lon} if (place.strip() or lat is not None) else None
-    return feed_svc.feed(conn, user, before, limit, bool(mine), view if view in ("follow", "fav", "ai") else "", author, geo)
+    return feed_svc.feed(conn, user, before, limit, bool(mine), view if view in ("follow", "fav", "ai", "notes_today") else "", author, geo)
 
 
 @app.post("/api/feed/like")

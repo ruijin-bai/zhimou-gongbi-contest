@@ -279,7 +279,7 @@ const BacktestPage = {
       <div class="bt-src mt" role="radiogroup" aria-label="数据来源"><span class="small">数据来源（必选）</span>
         <label v-for="s in SOURCES" :key="s[0]" :class="['bt-opt', {on: form.source === s[0]}]"><input type="radio" name="bt-src" :value="s[0]" v-model="form.source" :disabled="busy">{{ s[1] }}</label></div>
       <div class="row wrap mt bt-fields">
-        <label class="small">标签（选填，会显示在报告上）<input class="in" v-model="form.label" maxlength="40" placeholder="如 基线更新01-06" :disabled="busy"></label>
+        <label class="small">标签（选填，会显示在报告上）<input class="in" v-model="form.label" maxlength="40" placeholder="如 SEC1 更新01-06" :disabled="busy"></label>
         <label class="small">回测容差<select class="in" v-model.number="form.tol" :disabled="busy"><option v-for="t in tolOpts" :key="t" :value="t">{{ t }} 天</option></select></label></div>
       <div class="small mt" v-if="form.exclude.length">将剔除的期次：<span class="chip" v-for="d in form.exclude" :key="d">{{ d }} <a @click="form.exclude = form.exclude.filter((x) => x !== d)" aria-label="取消剔除">×</a></span></div>
       <div class="row wrap mt"><button class="btn primary" :disabled="!can.ok || busy" @click="run">{{ busy ? '回测中…' : '开始回测' }}</button>
@@ -288,15 +288,20 @@ const BacktestPage = {
     <empty-state v-else-if="err" :reason="err"></empty-state>
     <empty-state v-else-if="!v && !panel" :title="emptyTitle" :reason="emptyReason" :action="emptyAction" :alt="emptyAlt"></empty-state>
     <template v-else-if="v">
-      <bt-summary :v="v"></bt-summary>
-      <bt-periods :v="v" :can-edit="canRun" v-model:excl="excl" @rerun="rerun"></bt-periods>
-      <bt-odd :v="v" :key="'odd' + v.id"></bt-odd>
-      <bt-sens :v="v" :can-adopt="canAdopt" :live-red="liveRed" :key="'sens' + v.id" @adopted="onAdopted"></bt-sens>
-      <details class="zb-card defs"><summary class="small"><b>口径说明</b></summary><div v-for="(d, k) in v.summary.definitions" :key="k">{{ k }}：{{ d }}</div></details>
+      <!-- 一屏化（验收 I15）：四块结果分页签逐块看，不再上下堆成近 3 屏 -->
+      <div class="seg bt-tabs mb"><button v-for="s in SECS" :key="s[0]" :class="{on: sec === s[0]}" @click="sec = s[0]">{{ s[1] }}</button></div>
+      <div class="bt-sec" v-fit="200">
+      <template v-if="sec === 'sum'"><bt-summary :v="v"></bt-summary>
+        <div class="small mt"><a @click="defsOpen = true">口径说明（{{ Object.keys(v.summary.definitions || {}).length }} 条）</a></div></template>
+      <bt-periods v-else-if="sec === 'per'" :v="v" :can-edit="canRun" v-model:excl="excl" @rerun="rerun"></bt-periods>
+      <bt-odd v-else-if="sec === 'odd'" :v="v" :key="'odd' + v.id"></bt-odd>
+      <bt-sens v-else :v="v" :can-adopt="canAdopt" :live-red="liveRed" :key="'sens' + v.id" @adopted="onAdopted"></bt-sens></div>
+      <zb-drawer v-if="defsOpen" title="口径说明" @close="defsOpen = false"><div class="small mb" v-for="(d, k) in v.summary.definitions" :key="k"><b>{{ k }}</b>：{{ d }}</div></zb-drawer>
     </template>
     <ai-note page="backtest"></ai-note></div>`,
   data: () => ({ v: null, src: "real", known: {}, loading: true, err: "", panel: false, files: [], bad: [], busy: false, runErr: "",
-    form: { source: "", label: "", tol: 0, exclude: [] }, excl: [], last: null, liveRed: null, SOURCES: BT_SOURCES }),
+    form: { source: "", label: "", tol: 0, exclude: [] }, excl: [], last: null, liveRed: null, SOURCES: BT_SOURCES,
+    sec: "sum", defsOpen: false, SECS: [["sum", "汇总"], ["per", "期次与混淆矩阵"], ["odd", "误报与漏报"], ["sens", "阈值敏感性"]] }),
   computed: {
     role: () => roleOf(),
     canRun() { return this.role === "eng_sup"; },          // 管理员只读（G-13）；接口另有本地校验

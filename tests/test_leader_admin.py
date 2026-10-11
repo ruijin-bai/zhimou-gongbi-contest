@@ -65,7 +65,7 @@ def test_leader_overview_page_is_read_only_and_multi_project():
     assert re.findall(r"\bPUT\(\"([^\"]+)\"", cp) == ["/api/me/project"]              # 唯一的写是切换当前查看的项目
     for word in ("确认", "派单", "审批", "下指令", "生成简报"):
         assert f">{word}<" not in cp, word
-    for sample in ("25.1", "6.7 万", "陈立军", "2024-09-22", "尼日利亚"):            # 设计稿示例不硬编码
+    for sample in ("25.1", "6.7 万", "陈立军", "2024-09-22", "项目所在国"):            # 设计稿示例不硬编码
         assert sample not in cp, sample
     assert "不能相加" in cp and "系统核定不等于业主计量认证" in cp
     assert "AI按当前事实整理" in cp and "source === 'ai'" in cp                         # 只有 AI 来源才写 AI 标签

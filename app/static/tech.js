@@ -106,7 +106,7 @@ const TechHome = {
       <button class="btn primary" :disabled="!text.trim() || busy" @click="saveText">记</button></div></div>
   <div class="zb-kpis n3 zb-m-kpis">
     <button type="button" class="zb-kpi" @click="jump('m-notes')"><div class="zb-kpi-b"><span class="zb-kpi-l">今日记录</span><span class="zb-kpi-v">{{ notes.length }}</span></div></button>
-    <button type="button" :class="['zb-kpi', todo && todo.total ? 'orange' : '']" @click="jump('m-todo')"><div class="zb-kpi-b"><span class="zb-kpi-l">待我处理</span><span class="zb-kpi-v">{{ todo ? todo.total : '—' }}</span></div></button>
+    <button type="button" :class="['zb-kpi', todo && todo.n ? 'orange' : '']" @click="jump('m-todo')"><div class="zb-kpi-b"><span class="zb-kpi-l">待我处理</span><span class="zb-kpi-v">{{ todo ? todo.n : '—' }}</span></div></button>
     <button type="button" :class="['zb-kpi', todo && todo.overdue ? 'red' : '']" @click="jump('m-todo')"><div class="zb-kpi-b"><span class="zb-kpi-l">已超期</span><span class="zb-kpi-v">{{ todo ? todo.overdue || 0 : '—' }}</span></div></button></div>
   <div :class="['zb-card', {all: allNotes}]" id="m-notes"><div class="zb-ch"><ic n="clock"></ic><h2>我今天的记录</h2><span class="grow"></span><span class="zb-n" v-if="notes.length">{{ notes.length }}</span></div>
     <div v-if="notes.length"><zb-paged :items="shownNotes" :size="8" :m-size="6" unit="条" :fit="false"><template #default="{ item: n }"><div class="tnote"><div class="readrow row">
@@ -155,9 +155,9 @@ const TechHome = {
       <div class="rec-days"><div v-for="w in d.week.days" :key="w.date"><i :class="{on: dayHasContent(w)}"></i><span>{{ weekDayName(w.date).slice(1) }}</span></div></div>
       <div class="zb-m-s">{{ d.week.start }} ~ {{ d.week.end }} · 每周确认一次，提交后更新进度计划</div></div><ic n="chevron"></ic></div>
     <div class="zb-m-row" v-if="d.daily_log"><div class="grow"><div class="zb-m-t">今日施工日志 <span class="chip" v-if="!d.day_log">待整理</span></div>
-      <div class="zb-m-s"><template v-if="d.day_log && d.day_log.drafted_at">已按随手记整理，更新于 {{ fmtDT(d.day_log.drafted_at).slice(11) }} · </template>每晚 20:00 统一整理<template v-if="d.auto_organize === false">（自动整理当前未开启，可点“立即整理”）</template></div></div>
+      <div class="zb-m-s"><template v-if="d.day_log && d.day_log.drafted_at">已按随手记整理，更新于 {{ fmtDT(d.day_log.drafted_at).slice(11) }} · </template>每晚 20:00 统一整理，也可点“立即整理”</div></div>
       <div class="zb-btns"><a v-if="d.day_log" @click="go('log', {id: d.day_log.id})">查看</a>
-        <button class="btn sm" v-if="d.notes.length" :disabled="org" @click="organize">{{ org ? '整理中' : '立即整理' }}</button></div></div>
+        <button class="btn sm" v-if="d.notes.length" :disabled="org || weekDone" :title="weekDone ? '本周进度已确认提交，日志随周确认一并提交，不再重新整理' : ''" @click="organize">{{ org ? '整理中' : weekDone ? '本周已确认' : '立即整理' }}</button></div></div>
     <div class="zb-m-row"><div class="grow"><div class="zb-m-t">已用 Excel 写了日报</div><div class="zb-m-s">导入生产日报 .xlsx，逐行核对后生成当天日志草稿</div></div>
       <button class="btn sm" @click="go('xlsx')"><ic n="file"></ic>导入</button></div></div>
   <ai-note page="tech"></ai-note>
@@ -165,6 +165,7 @@ const TechHome = {
   data: () => ({ d: null, text: "", busy: false, upl: false, org: false, t0: 0, sug: {}, sugBusy: false, pickOpen: null, PICK_KINDS: [["hazard", "安全隐患"], ["ticket", "材料/混凝土小票"], ["conceal", "隐蔽验收照片"]], fq: {}, fqForm: {}, fqBusy: false, fill: { part: "", tpl: "" }, offline: false, err: "", replaceVp: 0, playing: 0, todo: null, allNotes: false, allTodo: false,
     store, STATUS, STATUS_CHIP, LEVEL_F }),
   computed: {
+    weekDone() { return !!(this.d && this.d.week && ["submitted", "approved"].includes(this.d.week.status)); },   // 本周已确认后不再“立即整理”（D11）
     // 弱网暂存的随手记、录音（待上传）与服务器上转写中的录音排在前面，联网同步、转写完成后自然并入服务器记录
     notes() { return [...(window.QUICK ? window.QUICK.pendingNotes() : []), ...this.d.notes]; },
     // 首页只摊开最近 2 条和还在上传/转写的条目；AI 的追问只给条数，点开回答（一屏化 RJ 10-10：随手记 + 最要紧的待办在首屏）
@@ -196,7 +197,7 @@ const TechHome = {
     },
     retry() { this.err = ""; this.load(); },
     // 指标行的“待我处理/已超期”直接读下面待办组件已取到的数据，不再单独请求
-    hookTodo() { if (this.unTodo) this.unTodo(); this.unTodo = this.$watch(() => this.$refs.todo && this.$refs.todo.d, (t) => { this.todo = t ? { total: t.total || 0, overdue: t.overdue || 0, n: todoEntries(t.items || []).length } : null; }, { immediate: true }); },
+    hookTodo() { if (this.unTodo) this.unTodo(); this.unTodo = this.$watch(() => this.$refs.todo && this.$refs.todo.d, (t) => { this.todo = t ? todoCounts(t.items || []) : null; }, { immediate: true }); },
     // 照片文件缺失（如演示副本不含原图）：显示真实空态“缺文件”，不显示破图
     imgMiss(e) { const im = e.target; if (im.dataset.miss) return; im.dataset.miss = "1"; im.src = PHOTO_MISS_SVG; },
     jump(id) { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); },
@@ -415,6 +416,7 @@ const TechLog = {
     <div class="tiny muted mt">全部回答后，将据此自动修正日志。</div></details>
 
   <template v-if="(log.has_ai_draft || log.imported) || !editable">
+    <div class="rd-body" v-fit="240"><!-- 一屏化（验收 I15）：电脑端日志预览在面板内滚动，提交栏留在面板外 -->
     <div class="card mt" v-if="isWeek && log.week_review && log.week_review.rows.length">
       <review-table title="本周完成工程量：逐个作业核对（提交后更新进度计划）" :rows="wrRows" v-model="decisions" :readonly="!editable" :bulk="true" :cols="WR_COLS"
         hint="AI 汇总来自每日日志，点开“依据”可看是哪几天哪条记录。选“无法判断”或“不采纳”的作业不提交数量，不会补零。"></review-table></div>
@@ -443,6 +445,7 @@ const TechLog = {
     <div class="card mt checks" v-if="warns.length"><b>规则提示 {{ warns.length }}</b>
       <div class="check" v-for="(w, i) in warnGroups" :key="i"><span><ic :n="w.level === 'error' ? 'ban' : 'alert'"></ic></span>
         <span><a class="muted small" v-if="w.where" @click="jump(w)">[{{ w.where }}]</a> {{ w.text }}</span></div></div>
+    </div>
   </template>
   <ai-note :page="isWeek ? 'week' : 'daylog'"></ai-note>
   <div class="bottom-bar" v-if="editable && (log.has_ai_draft || log.imported) && (isWeek || !weeklyMode)">
@@ -800,7 +803,11 @@ const FindingDetail = {
   },
   unmounted() { this.gone = true; clearTimeout(this.pt); window.removeEventListener("zb-quick-synced", this.onSynced); window.removeEventListener("online", this.onOnline); },
   methods: {
-    go, can, isLeader, isSubOrg, fmtDT, lateUpload, back() { history.back(); },
+    go, can, isLeader, isSubOrg, fmtDT, lateUpload,
+    back() {   // 回到这条事项所在的台账（验收 D1）
+      const r = roleOf(), list = r === "tech" ? "tasks" : r === "sub_safety" ? "ledger" : this.f && this.f.agent === "quality" ? "quality" : "safety";
+      backOr(["tasks", "ledger", "quality", "safety"], list);
+    },
     async load() {
       this.now = Date.now();
       const id = this.id, n = (this.seq = (this.seq || 0) + 1);

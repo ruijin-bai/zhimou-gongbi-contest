@@ -12,7 +12,7 @@ from datetime import date, timedelta
 from pathlib import Path
 
 from ..ai import docs_registry as reg
-from ..ai.client import AIError, call_json
+from ..ai.client import AIError, call_json, cause_of
 from ..config import settings
 from ..db import all_, audit, dumps, event, insert, loads, now_iso, one, tx
 from . import claim_notice, claims, p6, reports, schedule, sub_letters
@@ -156,6 +156,23 @@ def finalize(kind: str, narrative: dict, facts: dict, ai: bool) -> tuple[dict, l
     return narrative, issues, back
 
 
+def fallback_note(kind: str, back: list[str]) -> str:
+    """“AI 稿数字核对未通过、换成规则版”的提示：写栏目标题，不露字段名（验收 I17）。"""
+    names = {s["key"]: s["title"] for s in reg.template(kind)["sections"]}
+    return "这些栏目的 AI 稿数字与系统事实对不上，已换成规则版文字：" + "、".join(f"“{names.get(k, k)}”" for k in back)
+
+
+_OLD_BACK = "以下栏目数字核对未通过，已退回规则版："
+
+
+def _note(kind: str, chk: dict) -> str:
+    """旧记录的提示里带字段名：显示时按 fallback 重写。"""
+    note = chk.get("note", "")
+    if _OLD_BACK in note:
+        note = "；".join(x for x in (note.split(_OLD_BACK)[0].rstrip("；"), fallback_note(kind, chk.get("fallback") or [])) if x)
+    return note
+
+
 def _ref_of(kind: str, facts: dict) -> str:
     rt = reg.TYPES[kind]["ref"]
     return facts["period_start"] if rt in ("week", "month") else facts["ref"] if rt in ("source", "company") else facts["key"]
@@ -186,10 +203,10 @@ def generate(conn, user: dict, kind: str, ref: str | None) -> dict:
         if r.provider == "mock":
             source, note = "rule", "离线模拟模型：文字为规则版"
     except AIError as e:
-        nar, source, note = reg.rule(kind, facts), "rule", f"模型暂不可用，已用规则版文字（{str(e)[:60]}）"
+        nar, source, note = reg.rule(kind, facts), "rule", f"模型暂不可用（{cause_of(e)}），已用规则版文字"
     nar, issues, back = finalize(kind, nar, facts, source == "ai")
     if back:
-        note = "；".join(x for x in (note, "以下栏目数字核对未通过，已退回规则版：" + "、".join(back)) if x)
+        note = "；".join(x for x in (note, fallback_note(kind, back)) if x)
     ref_key = _ref_of(kind, facts)
     prev = one(conn, "SELECT id, version FROM gongbi_docs WHERE project_id=? AND kind=? AND ref=? ORDER BY version DESC LIMIT 1", (user["project_id"], kind, ref_key))
     with tx(conn):
@@ -252,7 +269,7 @@ def view(conn, r: dict, role: str = "") -> dict:
     return {**{k: r[k] for k in ("id", "kind", "ref", "title", "lang", "period_start", "period_end", "status", "version", "revision_of", "source", "created_at", "confirmed_at", "gen_seconds")},
             "type_name": t["name"], "type_zh": t.get("zh") or t["name"], "outward": bool(t.get("outward")), "template": tpl, "narrative": nar,
             "tables": {s["key"]: tb[s["table"]] for s in tpl["sections"] if s.get("table") and s["table"] in tb},
-            "check": chk.get("issues", []), "fallback": chk.get("fallback", []), "note": chk.get("note", ""), "can_confirm": role in t["confirm"],
+            "check": chk.get("issues", []), "fallback": chk.get("fallback", []), "note": _note(r["kind"], chk), "can_confirm": role in t["confirm"],
             "can_edit": r["status"] == "draft" and role in t["roles"] | t["confirm"],
             "notice": facts.get("notice"), "event_key": facts.get("key"), "company": facts.get("company"), "area": facts.get("area"),
             "letter": _letter_brief(conn, r["id"]) if r["kind"] in reg.SUB_KINDS else None, "project_title": facts.get("project", ""), "logs": len((facts.get("logs") or {}).get("ids", []))}
@@ -277,7 +294,8 @@ def listing(conn, user: dict, kind: str | None = None, ref: str | None = None) -
     if user["role"] == "leader":
         rows = [r for r in rows if r["status"] == "confirmed"]
     return [{**{k: r[k] for k in ("id", "kind", "ref", "title", "lang", "period_start", "period_end", "status", "version", "source", "created_at", "confirmed_at")},
-             "type_name": reg.TYPES[r["kind"]]["name"], "warnings": len((loads(r["check_json"], {}) or {}).get("issues", []))} for r in rows if r["kind"] in reg.TYPES]
+             "type_name": reg.TYPES[r["kind"]]["name"], "warnings": len((loads(r["check_json"], {}) or {}).get("issues", [])),
+             "fallback": len((loads(r["check_json"], {}) or {}).get("fallback", []))} for r in rows if r["kind"] in reg.TYPES]
 
 
 def edit(conn, user: dict, did: int, narrative: dict, confirm: bool = False) -> dict:
@@ -424,8 +442,9 @@ def _source_refs(conn, user: dict) -> list[dict]:
                 out.append({"key": f"finding:{f['id']}", "label": f"{sub_letters.AREA_NAME[f['agent']]} · {f['title'][:40]}", "notice": f"{f['company']} · 期限 {(f['due_date'] or '—')[:10]}",
                             "tone": "red" if f["level"] == "high" else "orange"})
     if user["role"] in sub_letters.ISSUER["progress"]:
-        for a in all_(conn, "SELECT id, title, level, activity_code FROM alerts WHERE project_id=? AND status='confirmed' ORDER BY id DESC LIMIT 40", (pid,)):
-            out.append({"key": f"alert:{a['id']}", "label": f"进度 · {a['title'][:40]}", "notice": "已确认属实", "tone": {"red": "red", "orange": "orange"}.get(a["level"], "blue")})
+        for a in all_(conn, "SELECT id, title, level, activity_code, as_of FROM alerts WHERE project_id=? AND status='confirmed' AND rule<>'stale' ORDER BY as_of DESC, id DESC LIMIT 40", (pid,)):
+            out.append({"key": f"alert:{a['id']}", "label": f"进度 · {a['title'][:40]}", "notice": "已确认属实" + (f" · 判定 {a['as_of'][5:10]}" if a.get("as_of") else ""),
+                        "tone": {"red": "red", "orange": "orange"}.get(a["level"], "blue")})
     return out
 
 

@@ -54,8 +54,8 @@ def run(conn, backup: Path | None) -> dict:
         p = conn.execute("SELECT id FROM projects WHERE code=?", (code,)).fetchone()
         if p:
             for col in ("file_name", "proj_name"):
-                x("小项目 P6 文件名", f"UPDATE p6_imports SET {col}=replace({col}, 'LEKKI-SIM', ?) WHERE project_id=? AND instr({col}, 'LEKKI')>0", code, p[0])
-    x("audit（旧编码）", "UPDATE audit SET detail=replace(detail, 'LEKKI-SIM', 'SIM') WHERE instr(detail, 'LEKKI')>0")
+                x("小项目 P6 文件名", f"UPDATE p6_imports SET {col}=replace({col}, 'DEMO-SIM', ?) WHERE project_id=? AND instr({col}, 'DEMO')>0", code, p[0])
+    x("audit（旧编码）", "UPDATE audit SET detail=replace(detail, 'DEMO-SIM', 'SIM') WHERE instr(detail, 'DEMO')>0")
     if "ai_keys" in tables:
         x("ai_keys（演示副本不留 Key）", "DELETE FROM ai_keys")
     return st

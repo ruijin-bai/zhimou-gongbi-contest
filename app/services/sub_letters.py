@@ -137,10 +137,15 @@ def source_facts(conn, pid: int, ref: str) -> dict:
         if not company:
             raise ValueError("未能按 WBS 范围确定负责该作业的分包单位，请指定单位" if not cos else "该作业涉及多个分包单位，请指定单位：" + "、".join(cos))
         due = (date.today() + timedelta(days=PROGRESS_REPLY_DAYS)).isoformat()
+        from . import facts as facts_svc
+        cur = facts_svc.activity_facts(conn, pid, a["activity_code"])
+        cur_pct, cur_src = (cur.get("pct_log"), f"截至 {cur.get('pct_log_date')} 日志累计") if cur.get("pct_log") is not None else \
+            (cur.get("pct_p6"), f"P6 数据日期 {cur.get('p6_data_date')} 记录") if cur.get("pct_p6") is not None else (None, "")
         return {"project": project, "src_type": "alert", "src_id": a["id"], "area": "progress", "area_name": "进度", "company": company,
                 "title": a["title"], "level": a["level"], "activity_code": a["activity_code"], "activity_name": a["activity_name"],
                 "planned_pct": d.get("planned_pct"), "actual_pct": d.get("actual_pct"), "slip_days": d.get("slip_days"), "early_finish": d.get("early_finish"),
-                "forecast_finish": d.get("forecast_finish"), "date": a["first_detected"][:10], "photos": [],
+                "forecast_finish": d.get("forecast_finish"), "date": (a.get("as_of") or a["first_detected"])[:10], "as_of": (a.get("as_of") or "")[:10],
+                "cur_pct": cur_pct, "cur_src": cur_src, "photos": [],
                 "requirement": f"请于 {due} 前书面回复赶工措施及预计完成日期", "due_date": due, "ref_tag": f"W{a['id']}", "basis": basis(conn, pid, "progress")}
     raise ValueError("请选择一条隐患、质量问题或进度预警")
 

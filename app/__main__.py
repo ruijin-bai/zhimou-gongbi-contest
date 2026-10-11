@@ -35,7 +35,7 @@ def main(argv: list[str] | None = None) -> int:
     p_roles = sub.add_parser("demo-roles", help="给已有仿真项目补齐各岗位演示账号（只新增缺失账号，不改其他数据）")
     p_roles.add_argument("--password", default="sim12345")
 
-    p_sim = sub.add_parser("simulate", help="生成莱基疏港路仿真项目（独立项目，界面标注仿真）")
+    p_sim = sub.add_parser("simulate", help="生成深水港疏港路仿真项目（独立项目，界面标注仿真）")
     p_sim.add_argument("--records", help="真实周产值记录 xlsx（周起、实际产值、计划产值）")
     p_sim.add_argument("--weeks", type=int, default=18)
     p_sim.add_argument("--reset", action="store_true", help="删除已有仿真项目后重建")

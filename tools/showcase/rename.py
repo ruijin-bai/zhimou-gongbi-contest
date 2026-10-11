@@ -1,4 +1,4 @@
-"""改名：仿真项目统一叫“仿真公路项目”（编码 SIM-ROAD），库里、素材里不再出现莱基/LEKKI 字样（RJ 2026-10-11）。
+"""改名：仿真项目统一叫“仿真公路项目”（编码 SIM-ROAD），库里、素材里不再出现示例港区/DEMO 字样（RJ 2026-10-11）。
 
 - rename_db：全库所有文本列按 NAME_MAP 逐条替换（只在演示副本上做）；
 - build_assets：生成改名后的回放素材目录（随手记/单据清单改名、单据照片按新名字重画、语音原样复制）；
@@ -21,22 +21,22 @@ NEW_CODE = "SIM-ROAD"
 
 # 顺序有关：长的先换
 NAME_MAP = [
-    ("莱基深水港疏港路（仿真·旧版）", NEW_NAME + "（旧版）"),
-    ("莱基深水港疏港路（仿真）", NEW_NAME),
-    ("莱基深水港疏港路", NEW_NAME),
-    ("莱基疏港路项目拌合站", NEW_NAME + "拌合站"),
-    ("莱基疏港路", NEW_NAME),
-    ("莱基半岛", "项目沿线"),
-    ("莱基", "仿真"),
-    ("LEKKI-SIM2", NEW_CODE),
-    ("LEKKI ROAD PROJECT BATCHING PLANT", "SIM ROAD PROJECT BATCHING PLANT"),
-    ("LEKKI BATCHING PLANT", "SIM ROAD BATCHING PLANT"),
-    ("Lekki Coastal Steel Supply Ltd.", "Simroad Coastal Steel Supply Ltd."),
-    ("LEKKI", "SIMROAD"),
-    ("Lekki", "Simroad"),
-    ("拉各斯泻湖商品混凝土有限公司", "滨湖商品混凝土有限公司（仿真）"),
+    ("深水港疏港路（仿真·旧版）", NEW_NAME + "（旧版）"),
+    ("深水港疏港路（仿真）", NEW_NAME),
+    ("深水港疏港路", NEW_NAME),
+    ("深水港疏港路项目拌合站", NEW_NAME + "拌合站"),
+    ("深水港疏港路", NEW_NAME),
+    ("示例港区半岛", "项目沿线"),
+    ("示例港区", "仿真"),
+    ("DEMO-SIM2", NEW_CODE),
+    ("DEMO ROAD PROJECT BATCHING PLANT", "SIM ROAD PROJECT BATCHING PLANT"),
+    ("DEMO BATCHING PLANT", "SIM ROAD BATCHING PLANT"),
+    ("Coastal Steel Supply Ltd.", "Simroad Coastal Steel Supply Ltd."),
+    ("DEMO", "SIMROAD"),
+    ("Demo", "Simroad"),
+    ("沿海泻湖商品混凝土有限公司", "滨湖商品混凝土有限公司（仿真）"),
 ]
-BANNED = ("莱基", "LEKKI", "Lekki", "lekki", "拉各斯泻湖", "LOT1", "Lot1", "lot1")
+BANNED = ("示例港区", "DEMO", "Demo", "demo", "沿海泻湖", "SEC1", "Sec1", "sec1")
 
 
 def rename_text(s):
@@ -81,7 +81,7 @@ def rename_db(conn) -> dict:
 
 
 def residue(conn) -> list[str]:
-    """改名后仍含莱基/LEKKI 字样的列（区分大小写）。"""
+    """改名后仍含示例港区/DEMO 字样的列（区分大小写）。"""
     out = []
     for t in _tables(conn):
         for _cid, col, *_ in conn.execute(f'PRAGMA table_info("{t}")').fetchall():

@@ -192,7 +192,7 @@ def test_guard_failure_falls_back_to_rule(env, monkeypatch):
         return AIResult(data=data, run_id=None, provider="openai", model="m", latency_ms=1, repaired=False, degraded="")
     monkeypatch.setattr(gd, "call_json", fake)
     d = eng.post("/api/gongbi/docs", json={"kind": "delay_brief", "ref": _eq_key(eng)}).json()
-    assert "99" not in d["narrative"]["event"] and "event" in d["fallback"] and "退回规则版" in d["note"]
+    assert "99" not in d["narrative"]["event"] and "event" in d["fallback"] and "换成规则版" in d["note"] and "event" not in d["note"]   # 提示写栏目标题，不露字段名（验收 I17）
 
 
 def test_leader_sees_confirmed_only_and_subs_blocked(env):
@@ -210,3 +210,11 @@ def test_notice_rule_has_admin_ui():
     from pathlib import Path
     js = (Path(__file__).resolve().parent.parent / "app" / "static" / "views.js").read_text(encoding="utf-8")
     assert '"/api/claims/notice-rule"' in js and "saveClaimRule" in js
+
+
+def test_fallback_note_uses_section_titles_and_rewrites_old_notes():
+    from app.services import gongbi_docs as gd
+    n = gd.fallback_note("work_contact", ["fact"])
+    assert "fact" not in n and "“" in n
+    old = {"note": "以下栏目数字核对未通过，已退回规则版：fact", "fallback": ["fact"]}
+    assert gd._note("work_contact", old) == n

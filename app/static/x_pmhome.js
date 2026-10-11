@@ -73,7 +73,7 @@ const PmHome = {
     <load-state compact v-else-if="!d" :loading="true"></load-state>
     <template v-if="d">
     <div :class="['zb-kpis', 'n' + kpis.length]">
-      <button v-for="k in kpis" :key="k.k" :class="['zb-kpi', k.tone]" @click="todoGo(k.route)"><span class="zb-kpi-ic"><ic :n="k.icon"></ic></span>
+      <button v-for="k in kpis" :key="k.k" :class="['zb-kpi', k.tone, {wide: k.unit}]" @click="todoGo(k.route)"><span class="zb-kpi-ic"><ic :n="k.icon"></ic></span>
         <span class="zb-kpi-b"><span class="zb-kpi-l">{{ k.label }}</span><b class="zb-kpi-v">{{ k.value }}<small v-if="k.unit">{{ k.unit }}</small></b><span class="zb-kpi-s" :title="k.title || k.sub">{{ k.sub }}</span></span><ic n="chevron" class="zb-kpi-go"></ic></button></div>
 
     <div class="zb-row pm-r2">
@@ -81,8 +81,7 @@ const PmHome = {
           <span :class="['zb-src', brief && brief.source === 'ai' ? 'ai' : '']">{{ briefLabel }}<help-tip v-if="briefNote" :text="briefNote"></help-tip></span>
           <button class="zb-link" :disabled="busy" @click="refresh"><ic n="refresh"></ic>{{ busy ? '生成中' : (brief ? '刷新' : '生成') }}</button></div>
         <div class="pm-bl" v-for="a in briefRows" :key="a.area"><span :class="['pm-bl-ic', a.cls]"><ic :n="a.icon"></ic></span><b>{{ a.area }}：</b>
-          <span class="pm-bl-t" :title="a.full"><em v-if="a.sys" class="zb-sys">{{ a.sys }}</em>{{ a.text }}</span><a class="pm-bl-src" v-if="!narrow" @click="todoGo(a.route)">{{ a.src }}</a></div>
-        <div class="pm-basis-m" v-if="narrow"><button v-for="a in briefRows" :key="a.area" class="zb-chip" @click="todoGo(a.route)">{{ a.src }}</button></div></section>
+          <span class="pm-bl-t" :title="a.full"><em v-if="a.sys" class="zb-sys">{{ a.sys }}</em>{{ a.text }}</span></div></section>
 
       <section class="zb-card pm-todo"><div class="zb-ch"><ic n="clipboard"></ic><h2>待我处理</h2><help-tip :text="d.boundary + (out ? '产值为内部产值统计（非计量认证）。' : '')"></help-tip><span class="zb-n" v-if="entries.length">{{ entries.length }}</span><span class="pm-tally tiny muted" v-if="tally">{{ tally }}</span><span class="grow"></span>
           <a class="zb-link" v-if="know.n" @click="todoGo(know.parts[0].route)" :title="know.parts.map((p) => p.label + ' ' + p.n).join('；')">需要知道 {{ know.n }} 项</a></div>
@@ -97,12 +96,12 @@ const PmHome = {
         <div class="zb-body"><ol class="pm-ms" v-if="ms.length"><li v-for="m in ms" :key="m.code"><i></i><div><div class="pm-ms-h"><b>{{ m.short_name || m.name }}</b><span>计划 {{ m.p6_date || '—' }}</span></div>
           <div class="pm-ms-f">模拟 P50 {{ m.p50 || '—' }} · 按期概率估计 {{ m.prob_label || '未知' }}</div></div></li></ol>
         <div class="zb-empty" v-else>还没有里程碑预测，导入 P6 计划并运行预测后显示。</div>
-        <div class="zb-foot"><a @click="todoGo('progress?tab=alerts')">已确认进度预警 <b>{{ alertN.all }}</b> 项</a><a @click="todoGo('progress?tab=forecast')">预测与赶工 <ic n="chevron"></ic></a></div></div></section>
+        <div class="zb-foot"><a @click="todoGo('progress?tab=alerts&status=confirmed')">已确认进度预警 <b>{{ alertN.all }}</b> 项</a><a @click="todoGo('progress?tab=forecast')">预测与赶工 <ic n="chevron"></ic></a></div></div></section>
 
       <section :class="['zb-card', 'pm-qual', {shut: shut('qual')}]"><div class="zb-ch" @click="tog('qual')"><ic n="shield"></ic><h2>质量态势</h2><span class="grow"></span><span class="tiny muted">未闭环 {{ q.open || 0 }} 项</span></div>
-        <div class="zb-body"><div class="pm-q-zero" v-if="!q.open"><span class="pm-q-ok"><ic n="check-circle"></ic></span><div><b>当前台账暂无未闭环问题</b><div class="tiny muted">验收与整改详情在质量台账查询</div></div></div>
+        <div class="zb-body"><div class="pm-q-zero" v-if="!q.open"><span class="pm-q-ok"><ic n="check-circle"></ic></span><div><b>当前台账暂无未闭环问题</b><div class="tiny muted">验收与整改详情点上方“质量未闭环”进入台账</div></div></div>
         <div class="pm-q-nums" v-else><div><b>{{ q.open }}</b><span>未闭环</span></div><div :class="{red: q.overdue}"><b>{{ q.overdue || 0 }}</b><span>超期</span></div><div><b>{{ q.reminders || 0 }}</b><span>待执行质控提醒</span></div></div>
-        <div class="zb-foot c"><a @click="todoGo('quality')">查看质量台账 <ic n="chevron"></ic></a></div></div></section>
+        </div></section>
 
       <section :class="['zb-card', 'pm-safe', {shut: shut('safe')}]"><div class="zb-ch" @click="tog('safe')"><ic n="chart"></ic><h2>安全变化 · 近 7 天</h2><span class="grow"></span><span class="tiny muted">新增 {{ week.n }} · 其中已闭环 {{ week.r }}</span></div>
         <div class="zb-body"><svg class="zb-bars" viewBox="0 0 420 80" role="img" :aria-label="'近 7 天按发现日新增已确认隐患 ' + week.n + ' 项，其中现已闭环 ' + week.r + ' 项'">
@@ -142,9 +141,9 @@ const PmHome = {
     alertN() { const n = { red: 0, orange: 0, yellow: 0, all: 0 }; for (const a of this.alerts) { n[a.level] = (n[a.level] || 0) + 1; n.all++; } return n; },
     kpis() {
       const a = this.alertN, out = [
-        { k: "prog", label: "进度风险", icon: "alert", value: a.red, tone: a.red ? "red" : "", route: "progress?tab=alerts",
+        { k: "prog", label: "进度风险", icon: "alert", value: a.red, tone: a.red ? "red" : "", route: "progress?tab=alerts&status=confirmed&level=red",
           sub: "已确认红色预警" + (a.orange || a.yellow ? ` · 另橙 ${a.orange} · 黄 ${a.yellow}` : "") },
-        { k: "qual", label: "质量未闭环", icon: "shield", value: this.q.open || 0, tone: this.q.overdue ? "red" : "green", route: "quality",
+        { k: "qual", label: "质量未闭环", icon: "shield", value: this.q.open || 0, tone: this.q.overdue ? "red" : "green", route: "quality?only=open",
           sub: "当前台账" + (this.q.overdue ? ` · 超期 ${this.q.overdue}` : "") },
         { k: "safe", label: "安全未闭环", icon: "helmet", value: this.s.open || 0, tone: this.s.overdue ? "orange" : "", route: "safety",
           sub: `高风险 ${this.s.high || 0} · 超期 ${this.s.overdue || 0}` },
@@ -170,7 +169,7 @@ const PmHome = {
     briefRows() {
       const items = (this.brief && this.brief.items) || [];
       const out = [];
-      for (const [area, icon, cls, src, route] of [["进度", "trend", "p", "P6 预警", "progress?tab=alerts"], ["质量", "shield", "q", "质量台账", "quality"]]) {
+      for (const [area, icon, cls, src, route] of [["进度", "trend", "p", "P6 预警", "progress?tab=alerts&status=confirmed"], ["质量", "shield", "q", "质量台账", "quality"]]) {
         const it = items.find((x) => x.area === area), r = { area, icon, cls, src, route };
         out.push(it ? { ...r, text: it.action ? `${it.title}，${it.action}` : `${it.title}：${it.detail}`, full: `${it.title}：${it.detail}${it.action ? "。建议：" + it.action : ""}` }
           : { ...r, text: this.factLine(area), full: "", sys: "统计" });

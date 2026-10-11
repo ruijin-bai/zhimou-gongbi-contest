@@ -7,6 +7,7 @@ const LogEditor = {
     <template #badge><span class="chip blue" v-if="log.auto">随手记自动整理</span>
       <span v-if="log.status" :class="['chip', STATUS_CHIP[log.status]]">{{ STATUS[log.status] }}</span>
       <span class="chip" v-if="!editable">{{ log.author.name }}</span></template>
+    <template #meta><a @click="back">← 返回</a></template>
     <template #actions><div class="row small muted" v-if="editable"><span>用时 {{ mmss(active) }}</span><span v-if="saving">保存中…</span><span v-else-if="dirty">未保存</span><span v-else>已保存</span></div></template></page-head>
   <div class="banner warn" v-if="log.mode === 'manual'">手工对照模式：不使用 AI，按同一模板填写，仅计时，用于与 AI 日志对比耗时。</div>
   <div class="banner warn" v-if="log.status === 'returned'">审核退回：{{ log.review_note }}</div>
@@ -14,6 +15,7 @@ const LogEditor = {
   <log-progress-trust :log="log"></log-progress-trust>
   <div class="banner warn" v-if="store.me.ai.provider === 'mock' && log.mode === 'ai'">当前为离线模拟模型，仅供测试，草稿不代表真实识别能力。</div>
 
+  <div class="rd-body" v-fit="260"><!-- 一屏化（验收 I15）：电脑端日志正文在面板内滚动，提交/审核栏留在面板外 -->
   <div class="grid g2 stack">
     <div class="zb-card rd-card" v-if="log.period !== 'week'">
       <div class="zb-ch"><ic n="camera"></ic><h2>现场照片</h2><span class="zb-n">{{ log.photos.length }}</span><span class="grow"></span>
@@ -114,6 +116,7 @@ const LogEditor = {
       <span v-if="log.reviewer"> · 审核：{{ log.reviewer }} {{ fmtDT(log.reviewed_at) }}</span></div>
   </div>
 
+  </div>
   <div class="bottom-bar" v-if="reviewable">
     <span class="small muted grow">{{ dqLeft ? '还有 ' + dqLeft + ' 条检查结论未决定' : '检查结论已全部决定，可通过或退回' }}</span>
     <button class="btn" :disabled="dqLeft > 0 || reviewing" @click="review('return')">退回</button>
@@ -147,6 +150,7 @@ const LogEditor = {
   unmounted() { clearInterval(this.timer); clearTimeout(this.saveT); if (this.dirty) this.saveNow(); },
   methods: {
     fmtDT, pct,
+    back() { if (roleOf() === "eng_sup") backOr("logs", "logs"); else history.back(); },   // 日志详情返回（验收 D1）：工程主管回日志列表，其他岗位回来处
     mmss(s) { s = Math.round(s); return `${Math.floor(s / 60)}分${String(s % 60).padStart(2, "0")}秒`; },
     async load() {
       this.err = null;
@@ -306,7 +310,7 @@ const LogList = {
   template: `<div>
   <page-head :page="isTech() ? 'logs_tech' : 'logs_eng'"><template #actions><div class="seg"><button v-for="s in tabs" :key="s[0]" :class="{on: status === s[0]}" @click="setStatus(s[0])">{{ s[1] }}</button></div></template></page-head>
   <load-state class="mb" compact v-if="err || !loaded" :loading="!loaded" :error="err" @retry="load"></load-state>
-  <list-digest v-if="loaded && !isTech() && items.length > 1" kind="logs" title="日志小结" :lead="dg.lead" key-title="建议逐份细看" key-hint="数据审核判为高风险" :keys="dg.keys" :groups="dg.groups"></list-digest>
+  <div class="rd-dg" v-fit="140" v-if="loaded && !isTech() && items.length > 1"><list-digest kind="logs" title="日志小结" :lead="dg.lead" key-title="建议逐份细看" key-hint="数据审核判为高风险" :keys="dg.keys" :groups="dg.groups"></list-digest></div>
   <section class="zb-card rd-logs">
     <div class="zb-ch"><ic n="file"></ic><h2>{{ listTitle }}</h2><span class="zb-n" v-if="loaded">{{ items.length }}</span>
       <span class="zb-src">{{ isTech() ? '本人日志与周确认，按周归组' : '分包技术员提交，点一行查看与审核' }}</span></div>
@@ -555,15 +559,15 @@ const Alerts = {
   <div class="zb-kpis n4 rp-kpis" v-if="all">
     <button type="button" :class="['zb-kpi', {on: status === '' && !lvl}]" @click="lvl = ''; setStatus('')"><span class="zb-kpi-ic"><ic n="alert"></ic></span><span class="zb-kpi-b"><span class="zb-kpi-l">全部预警</span>
       <b class="zb-kpi-v">{{ all.length }}<small> 项</small></b><span class="zb-kpi-s" :title="allSub">{{ allSub }}</span></span></button>
-    <button type="button" :class="['zb-kpi', redN ? 'red' : '', {on: lvl === 'red'}]" @click="lvl = 'red'; setStatus('')"><span class="zb-kpi-ic"><ic n="octagon"></ic></span><span class="zb-kpi-b"><span class="zb-kpi-l">红色预警</span>
-      <b class="zb-kpi-v">{{ redN }}<small> 项</small></b><span class="zb-kpi-s">{{ redN ? '其中待处理 ' + redOpen + ' 项' : '没有红色预警' }}</span></span></button>
-    <button type="button" :class="['zb-kpi', openN ? 'orange' : 'green', {on: status === 'open' && !lvl}]" @click="lvl = ''; setStatus('open')"><span class="zb-kpi-ic"><ic n="clock"></ic></span><span class="zb-kpi-b"><span class="zb-kpi-l">待处理</span>
+    <button type="button" :class="['zb-kpi', redN ? 'red' : '', {on: lvl === 'red'}]" @click="lvl = 'red'; setStatus('confirmed')"><span class="zb-kpi-ic"><ic n="octagon"></ic></span><span class="zb-kpi-b"><span class="zb-kpi-l">红色预警</span>
+      <b class="zb-kpi-v">{{ redN }}<small> 项</small></b><span class="zb-kpi-s">{{ (redN ? '已确认未关闭' : '没有已确认未关闭的红色预警') + (redOpen ? ' · 另待确认 ' + redOpen : '') }}</span></span></button>
+    <button type="button" :class="['zb-kpi', openN ? 'orange' : 'green', {on: status === 'open' && !lvl}]" @click="lvl = ''; setStatus('open')"><span class="zb-kpi-ic"><ic n="clock"></ic></span><span class="zb-kpi-b"><span class="zb-kpi-l">待确认</span>
       <b class="zb-kpi-v">{{ openN }}<small> 项</small></b><span class="zb-kpi-s">{{ openN ? '等待确认属实或误报' : '没有待人工反馈的预警' }}</span></span></button>
     <div class="zb-kpi rp-static"><span class="zb-kpi-ic"><ic n="users"></ic></span><span class="zb-kpi-b"><span class="zb-kpi-l">人员反馈<help-tip :text="statsDef + '。例如 80% 表示人工反馈过的预警里，有八成被确认属实。这是人员反馈的计数，不是模型准确率。'" label="确认占比怎么算"></help-tip></span>
       <b class="zb-kpi-v rp-fb" v-if="stats">确认 {{ stats.confirmed }}<small> · 误报 {{ stats.false_alarm }}</small></b><b class="zb-kpi-v" v-else>—</b>
       <span class="zb-kpi-s">{{ fbSub }}</span></span></div></div>
   <div class="rp-bar"><div class="seg"><button v-for="s in tabs" :key="s[0]" :class="{on: status === s[0]}" @click="setStatus(s[0])">{{ s[1] }}</button></div>
-      <span class="chip red rp-lvl" v-if="lvl === 'red'">只看红色 <a @click="lvl = ''" aria-label="取消只看红色">×</a></span>
+      <span class="chip red rp-lvl" v-if="lvl === 'red'">只看红色{{ status === 'confirmed' ? '（已确认未关闭）' : '' }} <a @click="lvl = ''" aria-label="取消只看红色">×</a></span>
       <help-tip label="判定规则">判定规则：挣值法计算滞后天数并与 P6 总浮时比较，滞后超过浮时为红色。<template v-if="isAdmin">阈值在 项目与规则 中调整。</template><template v-if="seesGaps">关键作业连续多日没有日报进度属于“数据缺口”（没报，不是落后），不在此列预警，也不计入预警准确率；旧库里留存的此类历史预警标为“数据缺口（历史）”。</template></help-tip>
       <span class="grow"></span>
       <template v-if="can('progress_ops')"><label class="rp-asof"><span class="tiny muted">判定日</span><input type="date" class="in" v-model="asOf"></label><button class="btn primary sm" :disabled="busy" @click="detect">{{ busy ? '判定中…' : '运行判定' }}</button></template></div>
@@ -572,8 +576,8 @@ const Alerts = {
   <div class="rp-al-dg" v-fit="160"><alert-digest :items="items" :status="status" @changed="replace" @only="(v) => (onlyKey = v)"></alert-digest></div>
   <div class="ad-fold" v-if="!onlyKey"><a @click="showAll = !showAll">{{ showAll ? '收起明细' : '展开全部 ' + items.length + ' 条明细' }}</a></div></div>
   <zb-paged v-if="shownItems.length" :items="shownItems" :size="4" :m-size="2" unit="条" cls="rp-al-list"><template #default="{ item: a }"><alert-card :key="a.id" :a="a" @changed="replace"></alert-card></template></zb-paged></div>
-  <section class="zb-card" v-if="loaded && !shownItems.length && (!items.length || lvl)"><empty-state compact :reason="lvl ? '这个分类下没有红色预警。' : emptyReason" :action="lvl ? {label: '显示全部颜色', fn: () => (lvl = '')} : emptyAction"></empty-state></section></div>`,
-  data: () => ({ items: [], all: null, lvl: "", status: "open", asOf: "", busy: false, stats: null, loaded: false, err: null, hasPlan: true, showAll: window.innerWidth >= 861, onlyKey: false }),   // 手机先只看小结，明细点“展开”再看（一屏化）
+  <section class="zb-card" v-if="loaded && !shownItems.length && (!items.length || lvl)"><empty-state compact :reason="lvl ? (status === 'confirmed' ? '没有已确认未关闭的红色预警。' : '这个分类下没有红色预警。') : emptyReason" :action="lvl ? {label: '显示全部颜色', fn: () => (lvl = '')} : emptyAction"></empty-state></section></div>`,
+  data: () => ({ store, items: [], all: null, lvl: "", status: "open", asOf: "", busy: false, stats: null, loaded: false, err: null, hasPlan: true, showAll: window.innerWidth >= 861, onlyKey: false }),   // 手机先只看小结，明细点“展开”再看（一屏化）
   computed: {
     // 明细默认展开（用户 2026-10-08：小结放上面，下面照常列出，避免大片空白），可收起；“只看需拍板”时只列需拍板的那几条
     shownItems() {
@@ -582,8 +586,10 @@ const Alerts = {
       if (this.onlyKey) return this.items.filter(alertIsKey);
       return this.showAll ? this.items : [];
     },
-    // 态势数字只按接口返回的预警逐条数，不另算口径；全部与红色分开写，不相加
-    redN() { return (this.all || []).filter((a) => a.level === "red").length; },
+    // 态势数字只按接口返回的预警逐条数，不另算口径；全部与红色分开写，不相加。
+    // “红色预警”与经理首页、领导总览同一口径（验收 B2）：已确认未关闭（status=confirmed，已关闭、误报不计）；待确认的红色另写
+    redN() { return (this.all || []).filter((a) => a.level === "red" && a.status === "confirmed").length; },
+    confirmedN() { return (this.all || []).filter((a) => a.status === "confirmed").length; },
     redOpen() { return (this.all || []).filter((a) => a.level === "red" && a.status === "open").length; },
     openN() { return (this.all || []).filter((a) => a.status === "open").length; },
     allSub() {
@@ -597,7 +603,7 @@ const Alerts = {
       const n = s.confirmed + s.false_alarm;
       return n ? `确认占比 ${pct(s.precision)}（${s.confirmed}/${n}），人员反馈计数，不是模型准确率` : "还没有人员反馈，不计算确认占比";
     },
-    tabs: () => [["", "全部"], ["open", "待处理"], ["confirmed", "已确认"], ["false_alarm", "误报"], ["closed", "已关闭"]],   // “全部”排第一（RJ 10-09），默认仍看待处理
+    tabs: () => [["", "全部"], ["open", "待确认"], ["confirmed", "已确认"], ["false_alarm", "误报"], ["closed", "已关闭"]],   // “全部”排第一（RJ 10-09），默认仍看待处理
     isAdmin: () => roleOf() === "admin",  // 阈值只有系统管理员能在“项目与规则”里改，其他岗位不提
     // “数据缺口”只给工程主管看（同后端 GAP_VIEW_ROLES）；项目经理只关注进度、质量、安全，不出现缺报概念（F-14③）
     seesGaps: () => roleOf() === "eng_sup",
@@ -608,18 +614,29 @@ const Alerts = {
     emptyReason() {
       if (this.status && this.status !== "open") return "这个分类下没有预警。";
       if (!this.hasPlan) return "还没有 P6 计划，没有可判定的作业。";
-      return "没有待处理的预警。最近一次判定没发现滞后，或还没运行过判定。";
+      // 有已确认未关闭的预警时不说“没发现滞后”，免得与首页“进度风险”数字矛盾
+      if (this.confirmedN) return `没有待确认的预警。已确认未关闭的预警 ${this.confirmedN} 项（红 ${this.redN}）在“已确认”页签。`;
+      return "没有待确认的预警。最近一次判定没发现滞后，或还没运行过判定。";
     },
     emptyAction() {
-      if (this.status && this.status !== "open") return { label: "看待处理的", fn: () => this.setStatus("open") };
+      if (this.status && this.status !== "open") return { label: "看待确认的", fn: () => this.setStatus("open") };
+      if (this.status === "open" && this.confirmedN) return { label: `看已确认未关闭的 ${this.confirmedN} 项`, fn: () => this.setStatus("confirmed") };
       if (this.status === "open" && this.all && this.all.length) return { label: `看全部 ${this.all.length} 项预警`, fn: () => this.setStatus("") };   // 运行判定已在上方工具行，不重复放
       if (!can("progress_ops")) return null;
       return this.hasPlan ? { label: "运行判定", fn: this.detect } : { label: "去导入 P6 计划", route: "progress?tab=plan", id: "plan-file" };
     },
   },
+  // 首页卡片带筛选进入：#/progress?tab=alerts&status=confirmed&level=red 直接列出卡上那几条
+  created() { this.fromRoute(); },
   mounted() { this.asOf = today(); this.load(); },
+  watch: { "store.route.params"(p, o) { if (p && (p.status !== (o || {}).status || p.level !== (o || {}).level)) { this.fromRoute(); this.load(); } } },
   methods: {
     can, pct,
+    fromRoute() {
+      const p = store.route.params || {};
+      if ("status" in p && ["", "open", "confirmed", "false_alarm", "closed"].includes(p.status)) this.status = p.status;
+      this.lvl = ["red", "orange", "yellow"].includes(p.level) ? p.level : "";
+    },
     setStatus(s) { this.status = s; this.showAll = window.innerWidth >= 861; this.onlyKey = false; this.load(); },
     async load() {
       this.err = null;
@@ -668,7 +685,7 @@ const AlertDetail = {
   mounted() { this.load(); },
   methods: {
     go, can, fmtDT,
-    back() { history.back(); },
+    back() { backOr("progress", "progress", { tab: "alerts", ...(this.a && this.a.status ? { status: this.a.status } : {}) }); },
     // 日志摘录里没有累计值时接口给的是“累计None%”：显示成“累计—”，不当成数字
     logText(l) { return l.items.concat(l.general).join("；").replace(/None%?/g, "—"); },
     async load() { this.err = null; try { this.a = await GET(`/api/alerts/${this.id}`); } catch (e) { this.err = e; } },
@@ -758,14 +775,14 @@ const Reports = {
       <b>{{ r.kind === 'week' ? '周报' : '月报' }} · {{ r.period_start.slice(5) }} ～ {{ r.period_end.slice(5) }}</b>
       <div class="row wrap rp-chips"><span :class="['chip', r.status === 'published' ? 'green' : '']">{{ r.status === 'published' ? '已发布' : '草稿' }}</span>
         <span :class="['chip', !r.warnings ? 'green' : 'orange']">数字核验 · {{ !r.warnings ? '通过' : r.status === 'published' ? '发布时保留 ' + r.warnings + ' 处' : r.warnings + ' 处待核' }}</span></div>
-      <div class="tiny muted">AI 生成用时 {{ r.gen_seconds }} 秒 · {{ fmtDT(r.created_at) }}</div></div></template></zb-paged></div>
+      <div class="tiny muted"><template v-if="r.gen_seconds > 0">AI 生成用时 {{ r.gen_seconds }} 秒 · </template>{{ fmtDT(r.created_at) }}</div></div></template></zb-paged></div>
     <div class="rp-detail"><component :is="rv" :id="sel" :key="sel" :embed="true" @changed="load"></component></div></div>
   <section class="zb-card rd-rpt" v-else><div class="zb-ch"><ic n="file"></ic><h2>{{ kname }}</h2><span class="zb-n" v-if="loaded">{{ items.length }}</span><span class="grow"></span><span class="zb-src">{{ listSrc }}</span></div>
     <div class="scroll-x" v-if="items.length"><zb-paged tag="table" cls="t rd-rt" :items="items" :size="12" :m-size="6" unit="份"><template #head><thead><tr><th>周期</th><th>状态</th><th>数字核验</th><th class="hide-m">生成用时</th><th class="hide-m">生成时间</th></tr></thead></template>
     <template #default="{ item: r }"><tr class="click" @click="go('report', {id: r.id})">
       <td class="nowrap rd-p"><b>{{ r.kind === 'week' ? '周报' : '月报' }}</b> {{ r.period_start }} ～ {{ r.period_end }}</td><td class="rd-st"><span :class="['chip', r.status === 'published' ? 'green' : '']">{{ r.status === 'published' ? '已发布' : '草稿' }}</span></td>
       <td class="rd-ck"><span :class="['chip', !r.warnings ? 'green' : r.status === 'published' ? '' : 'orange']">数字核验 · {{ !r.warnings ? '通过' : r.status === 'published' ? '发布时保留 ' + r.warnings + ' 处' : r.warnings + ' 处待核' }}</span></td>
-      <td class="nowrap hide-m">{{ r.gen_seconds }} 秒</td><td class="small muted hide-m">{{ fmtDT(r.created_at) }}</td></tr></template></zb-paged></div>
+      <td class="nowrap hide-m">{{ r.gen_seconds > 0 ? r.gen_seconds + ' 秒' : '—' }}</td><td class="small muted hide-m">{{ fmtDT(r.created_at) }}</td></tr></template></zb-paged></div>
     <div class="zb-empty" v-else-if="loaded"><empty-state compact :reason="emptyReason" :action="emptyAction"></empty-state></div></section></template>
   <ai-note page="reports"></ai-note></div>`,
   data: () => ({ items: [], kind: "week", ref: "", busy: false, sec: 0, loaded: false, err: null, wide: false, sel: null, gb: typeof GongbiHome !== "undefined" }),
@@ -806,7 +823,7 @@ const Reports = {
 const ReportView = {
   props: ["id", "embed"],   // embed：嵌在周报/月报页右侧，不出“返回”和边界说明
   emits: ["changed"],
-  template: `<div v-if="r" :class="['rv', 'rd-fx', {'rv-embed': embed, 'rv-pg': pager}]"><page-head page="report" :title="title" steps="report" :current="step"><template #meta><a v-if="!embed" @click="go('rpt', {seg: r.kind})">← 返回{{ r.kind === 'week' ? '周报' : '月报' }}列表</a><span class="rv-meta">{{ r.period_start }} ～ {{ r.period_end }} · 依据日志 {{ f.logs.count }} 份<template v-if="f.logs.expected !== undefined">（应报 {{ f.logs.expected }}）</template> · 照片 {{ f.photos }} 张 · 生成 {{ r.gen_seconds }} 秒 · 按项目模板撰写</span></template>
+  template: `<div v-if="r" :class="['rv', 'rd-fx', {'rv-embed': embed, 'rv-pg': pager}]"><page-head page="report" :title="title" steps="report" :current="step"><template #meta><a v-if="!embed" @click="go('rpt', {seg: r.kind})">← 返回{{ r.kind === 'week' ? '周报' : '月报' }}列表</a><span class="rv-meta">{{ r.period_start }} ～ {{ r.period_end }} · 依据日志 {{ f.logs.count }} 份<template v-if="f.logs.expected !== undefined">（应报 {{ f.logs.expected }}）</template> · 照片 {{ f.photos }} 张<template v-if="r.gen_seconds > 0"> · 生成 {{ r.gen_seconds }} 秒</template> · 按项目模板撰写</span></template>
     <template #actions><a class="btn" :href="'/api/reports/' + r.id + '/docx'">下载 Word</a>
       <template v-if="can('report_gen') && r.status !== 'published'"><button class="btn" @click="save('draft')">保存</button><button class="btn primary" v-if="can('report_publish')" :disabled="numsLeft > 0" :title="numsLeft > 0 ? '还有 ' + numsLeft + ' 处数字没核实' : null" @click="save('published')">审核发布</button></template></template></page-head>
   <div class="banner warn rv-bn" v-if="nums.length && r.status !== 'published'">数字守卫：以下数字未出现在统计数据中，请核实或删除<template v-if="can('report_publish')">；逐条核实勾选后才能发布</template>：
@@ -987,7 +1004,8 @@ const Ask = {
   mounted() { const q = store.route.params.q; if (q) { this.q = q; this.send(); } },
   data: () => ({ q: "", msgs: [] }),
   computed: { scopeText() { return this.agent ? ASK_SCOPE[this.agent.key] : ""; }, samples() { return (this.agent && ASK_SAMPLES[this.agent.key]) || ASK_DEFAULT_SAMPLES; },
-    scopeLine() { return this.agent && this.scopeText ? this.scopeText : "项目日志、P6 进度与预警"; } },
+    // 查询范围按最近一次回答实际检索的范围写（问到安全、质量时含对应台账）
+    scopeLine() { const last = [...this.msgs].reverse().find((m) => m.a && m.a.scope); return last ? last.a.scope : this.agent && this.scopeText ? this.scopeText : "项目日志、P6 进度与预警"; } },
   methods: {
     async send() {
       const q = this.q.trim(); if (!q) return; this.q = "";
@@ -1166,20 +1184,22 @@ const Notices = {
     <load-state :loading="!loaded && !err" :error="err" @retry="load">
     <section class="zb-card ra-nt-box" v-if="items.length"><zb-paged :items="items" :size="NOTICE_PS" :m-size="NOTICE_MPS" :fit="240" cls="ra-nt-list"><template #default="{ item: n, i }">
     <h3 class="ra-nt-dh" v-if="dayHead(i)"><span>{{ dayLabel(n) }}</span><small>{{ dayN[dayOf(n)] }} 条</small></h3>
-    <div :class="['ra-nt', {read: !!n.read_at, act: !!(noticeAction(n, role) || !n.read_at)}]" @click="open(n)">
+    <div :class="['ra-nt', 'act', {read: !!n.read_at}]" @click="open(n)">
       <div class="ra-nt-h"><span class="chip" v-if="n.state_text">{{ n.state_text }}</span><span class="chip blue" v-else-if="!n.read_at">未读</span>
         <b class="ra-nt-t">{{ n.title }}</b><span class="tiny muted nowrap">{{ fmtDT(n.created_at) }}</span></div>
       <zb-clamp class="small ra-nt-b" :text="n.body" :lines="2" pre :title="n.title"></zb-clamp>
       <div class="ra-nt-a" v-if="noticeAction(n, role)"><a class="small zb-link" v-if="noticeAction(n, role).route === 'alert'" @click.stop="open(n)">{{ noticeAction(n, role).label }} <ic n="chevron"></ic></a>
         <button :class="['btn', 'sm', n.state ? '' : 'primary']" v-else @click.stop="open(n)">{{ noticeAction(n, role).label }}</button></div></div></template></zb-paged>
     <div class="ra-nt-more" v-if="more"><span class="tiny muted">已取最近 {{ items.length }} 条</span><button class="zb-link ra-more" :disabled="busy" @click="loadMore">{{ busy ? '加载中' : '更早的消息' }}<ic n="chevron"></ic></button></div></section>
-    <empty-state v-if="loaded && !items.length" reason="没有消息。预警、派单和催办的通知会出现在这里。" :action="{label: '回到首页', fn: toHome}"></empty-state></load-state></div>`,
-  data: () => ({ items: [], loaded: false, err: null, more: false, busy: false, narrow: window.innerWidth < 861, NOTICE_PS, NOTICE_MPS }),
+    <empty-state v-if="loaded && !items.length" reason="没有消息。预警、派单和催办的通知会出现在这里。" :action="{label: '回到首页', fn: toHome}"></empty-state></load-state>
+    <zb-drawer v-if="full" :title="full.title" @close="full = null"><div class="small muted mb">{{ fmtDT(full.created_at) }}</div><div class="pre">{{ full.body || '（这条消息没有正文）' }}</div></zb-drawer></div>`,
+  data: () => ({ items: [], loaded: false, err: null, more: false, busy: false, narrow: window.innerWidth < 861, NOTICE_PS, NOTICE_MPS, full: null }),
   mounted() { this.load(); this.onR = () => { this.narrow = window.innerWidth < 861; }; window.addEventListener("resize", this.onR); },
   unmounted() { window.removeEventListener("resize", this.onR); },
   computed: {
     role: () => roleOf(),
-    unreadN() { return this.items.filter((n) => !n.read_at).length; },
+    // 未读数与铃铛同源：全部未读（服务器数），不是已取到的这一页里的未读（验收 I7）
+    unreadN() { return store.me ? store.me.unread || 0 : this.items.filter((n) => !n.read_at).length; },
     // 每天的条数（按已取到的消息算）
     dayN() { const m = {}; for (const n of this.items) { const d = this.dayOf(n); m[d] = (m[d] || 0) + 1; } return m; },
   },
@@ -1192,7 +1212,10 @@ const Notices = {
     dayHead(i) { const k = this.narrow ? NOTICE_MPS : NOTICE_PS; return i % k === 0 || this.dayOf(this.items[i - 1]) !== this.dayOf(this.items[i]); },
     async load() {
       this.err = null;
-      try { const r = await GET(`/api/notifications?limit=${NOTICE_PAGE}`); this.items = r; this.more = r.length >= NOTICE_PAGE; this.settle(r); }
+      try {
+        const r = await GET(`/api/notifications?limit=${NOTICE_PAGE}`); this.items = r; this.more = r.length >= NOTICE_PAGE;
+        const u = await GET("/api/notifications/unread"); if (store.me) store.me.unread = u.unread;   // 读取时已结清的已计入服务器数
+      }
       catch (e) { this.err = e; } finally { this.loaded = true; }
     },
     async loadMore() {
@@ -1217,6 +1240,7 @@ const Notices = {
         POST(`/api/notifications/${n.id}/read`).then((r) => { if (store.me && r && typeof r.unread === "number") store.me.unread = r.unread; }).catch(() => {});
       }
       if (a) runAction(a);
+      else this.full = n;   // 没有跳转目标的（公告、系统提醒）：就地看全文，不只标已读（验收 I8）
     },
     async readAll() {
       try { await POST("/api/notifications/read"); store.me.unread = 0; await this.load(); } catch (e) { toast(errText(e), true); }

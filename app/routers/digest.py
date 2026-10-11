@@ -12,6 +12,7 @@ class DigestIn(BaseModel):
     kind: str
     facts: dict = Field(default_factory=dict)
     fallback: str = Field("", max_length=600)
+    cached_only: bool = False   # 进页面、切筛选只取已有结果，不调用模型（验收 I9：列表 AI 小结人工点击才生成）
 
 
 def register(app) -> None:
@@ -29,4 +30,4 @@ def register(app) -> None:
             raise HTTPException(403, "不在项目经理的查看范围")
         if len(str(body.facts)) > 6000:
             raise HTTPException(400, "归类结果过长")
-        return svc.summarize(conn, user["project_id"], user["id"], body.kind, body.facts, body.fallback)
+        return svc.summarize(conn, user["project_id"], user["id"], body.kind, body.facts, body.fallback, cached_only=body.cached_only)

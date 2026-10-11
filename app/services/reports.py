@@ -162,7 +162,8 @@ def generate(conn, project_id: int, user: dict, kind: str, ref: str | None) -> d
         prompt_version=report_agent.PROMPT_VERSION, mock=lambda: report_agent.mock(facts, tpl), validate=lambda d: report_agent.normalize(d, tpl),
         project_id=project_id, user_id=user["id"], max_tokens=3500, input_meta={"logs": facts["logs"]["count"], "period": [start, end]},
     )
-    guard = report_agent.number_guard(result.data, prompt)
+    stance = report_agent.stance_fix(result.data, facts)   # 定性与表格/预警矛盾的句子先改掉，再做数字守卫（验收 I11）
+    guard = stance + report_agent.number_guard(result.data, prompt)
     tcheck = report_agent.template_check(result.data, tpl)
     with tx(conn):
         rid = insert(conn, "reports", {

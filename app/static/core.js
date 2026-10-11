@@ -3,7 +3,7 @@ const { createApp, reactive, ref, computed, onMounted, onUnmounted, watch, nextT
 
 // ---------------------------------------------------------------------------- 基础
 // offline：离线模式（断网时凭本机缓存的上次身份进入，见下方“离线启动”），页头提示，记录先存本机
-const store = reactive({ me: null, route: { name: "", params: {} }, toast: null, viewer: null, findingAgent: "", cam: null, offline: false });
+const store = reactive({ me: null, route: { name: "", params: {} }, toast: null, viewer: null, findingAgent: "", cam: null, offline: false, prevRoute: null });
 
 function toast(msg, err = false) {
   store.toast = { msg, err };
@@ -154,7 +154,13 @@ function go(name, params = {}) {
   const q = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&");
   location.hash = `#/${name}${q ? "?" + q : ""}`;
 }
+// 详情页“← 返回”（验收 D1）：从对应列表进来的就退回列表（保留筛选）；从首页、消息等别处进来的，回到该事项所在的列表
+function backOr(names, name, params = {}) {
+  const prev = store.prevRoute;
+  if (prev && [].concat(names).includes(prev.name)) history.back(); else go(name, params);
+}
 function parseRoute() {
+  if (store.route && store.route.name) store.prevRoute = store.route;
   const h = location.hash.replace(/^#\/?/, "");
   const [name, qs] = h.split("?");
   const params = {};

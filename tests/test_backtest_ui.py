@@ -576,10 +576,10 @@ def test_css_uses_color_tokens_only():
 
 def test_index_registers_assets_once():
     html = read("index.html")
-    assert html.count("/static/x_backtest.css?v=3") == 1 and html.count("/static/x_backtest.js?v=5") == 1
+    assert html.count("/static/x_backtest.css?v=3") == 1 and html.count("/static/x_backtest.js?v=6") == 1
     assert html.index("/static/x_backtest.js") < html.index("/static/nav.js") < html.index("/static/main.js")
     assert html.index("/static/core.js") < html.index("/static/x_backtest.js")
-    assert "x_ui.css?v=17" in html and "x_ui.js?v=13" in html and "views.js?v=72" in html      # 不动已有版本号（G-12）；views.js、x_ui.js 改过就跟随新版本号（T-17、D 版换皮、计划体检页头、P6 横道图、回放预警标识）
+    assert "x_ui.css?v=17" in html and "x_ui.js?v=14" in html and "views.js?v=73" in html      # 不动已有版本号（G-12）；views.js、x_ui.js 改过就跟随新版本号（T-17、D 版换皮、计划体检页头、P6 横道图、回放预警标识）
     if NODE:
         r = subprocess.run([NODE, "--check", str(STATIC / "x_backtest.js")], capture_output=True, text=True, timeout=60)
         assert r.returncode == 0, r.stderr

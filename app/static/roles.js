@@ -42,9 +42,9 @@ const SafeHome = {
   <section class="zb-hero zb-m-hero"><page-head page="shome" title="随手拍"><template #meta>{{ store.me.user.name }} · {{ d.company || '本单位' }} · 只看本单位 · <a class="sh-team-a" @click="open.team = true">本单位 {{ d.team.length }} 人</a></template></page-head></section>
   <div class="zb-card zb-m-snap"><safety-snap :embedded="true"></safety-snap></div>
   <div class="zb-kpis n3 zb-m-kpis">
-    <button type="button" :class="['zb-kpi', todo && todo.total ? 'orange' : '']" @click="jump"><div class="zb-kpi-b"><span class="zb-kpi-l">待我处理</span><span class="zb-kpi-v">{{ todo ? todo.total : '—' }}</span></div></button>
-    <button type="button" :class="['zb-kpi', todo && todo.overdue ? 'red' : '']" @click="jump"><div class="zb-kpi-b"><span class="zb-kpi-l">其中超期</span><span class="zb-kpi-v">{{ todo ? todo.overdue : '—' }}</span></div></button>
-    <button type="button" class="zb-kpi" @click="jump"><div class="zb-kpi-b"><span class="zb-kpi-l">其中 AI 候选</span><span class="zb-kpi-v">{{ todo ? todo.cand : '—' }}</span></div></button></div>
+    <button type="button" :class="['zb-kpi', todo && todo.n ? 'orange' : '']" @click="jump('')"><div class="zb-kpi-b"><span class="zb-kpi-l">待我处理</span><span class="zb-kpi-v">{{ todo ? todo.n : '—' }}<small v-if="todo"> 项</small></span></div></button>
+    <button type="button" :class="['zb-kpi', todo && todo.overdue ? 'red' : '']" @click="jump('overdue')"><div class="zb-kpi-b"><span class="zb-kpi-l">其中超期</span><span class="zb-kpi-v">{{ todo ? todo.overdue : '—' }}<small v-if="todo"> 项</small></span></div></button>
+    <button type="button" class="zb-kpi" @click="jump('cand')"><div class="zb-kpi-b"><span class="zb-kpi-l">其中 AI 候选</span><span class="zb-kpi-v">{{ todo ? todo.cand : '—' }}<small v-if="todo"> 项</small></span><span class="zb-kpi-s" v-if="todo && todo.candItems > todo.cand">共 {{ todo.candItems }} 条隐患</span></div></button></div>
   <div id="m-todo" :class="['zb-m-todo', {all: allTodo}]"><div v-fit="200" class="zb-m-todo-b"><todo-mobile ref="todo" title="待我处理" @vue:mounted="hookTodo"></todo-mobile></div>
     <button type="button" class="zb-m-more" v-if="todo && todo.n > 2" @click="allTodo = !allTodo">{{ allTodo ? '收起' : '查看全部 ' + todo.n + ' 项' }}</button></div>
   <div :class="['zb-card', {shut: !open.focus}]"><div class="zb-ch zb-m-fold" @click="open.focus = !open.focus"><ic n="eye"></ic><h2>今日重点作业巡查</h2><span class="zb-n">{{ d.focus.length }}</span><span class="grow"></span><span class="zb-m-tg">{{ open.focus ? '收起' : '展开' }}</span></div>
@@ -62,9 +62,15 @@ const SafeHome = {
   mounted() { this.load(); },
   methods: {
     async load() { this.err = null; try { this.d = await GET("/api/safety/home"); } catch (e) { this.err = e; } },
-    // 指标读下面待办组件已取到的同一份数据（候选数 = 待办里来源为 AI 候选的条数），不另发请求
-    hookTodo() { if (this.unTodo) this.unTodo(); this.unTodo = this.$watch(() => this.$refs.todo && this.$refs.todo.d, (t) => { this.todo = t ? { total: t.total || 0, overdue: t.overdue || 0, cand: (t.items || []).filter((i) => i.source === "candidate").length, n: todoEntries(t.items || []).length } : null; }, { immediate: true }); },
-    jump() { const el = document.getElementById("m-todo"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); },
+    // 指标读下面待办组件已取到的同一份数据，单位与列表一致（同照片候选合成一项，todoCounts），不另发请求（验收 I2）
+    hookTodo() { if (this.unTodo) this.unTodo(); this.unTodo = this.$watch(() => this.$refs.todo && this.$refs.todo.d, (t) => { this.todo = t ? todoCounts(t.items || []) : null; }, { immediate: true }); },
+    // “超期”“AI 候选”带筛选滚到列表；“待我处理”清除筛选
+    jump(f) {
+      const b = this.$refs.todo && this.$refs.todo.$refs.board;
+      if (b) { if (f) b.setFilter(f, true); else b.reset(); }
+      if (f) this.allTodo = true;
+      const el = document.getElementById("m-todo"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    },
   },
 };
 
@@ -105,7 +111,7 @@ const SysHome = {
         <div class="sy-kv"><ic n="calendar"></ic><span>定时任务</span><span class="sy-v">每日判定 {{ o.system.last_detect ? fmtDT(o.system.last_detect).slice(5) : '未运行' }}<small>晚间整理 {{ o.system.last_evening ? fmtDT(o.system.last_evening).slice(5) : '未运行' }}</small></span></div>
         <div class="sy-kv"><ic n="database"></ic><span>P6 计划</span><span class="sy-v" v-if="o.system.p6" :title="o.system.p6.file">数据日期 {{ o.system.p6.data_date }}<small>距今 {{ o.system.p6.stale_days }} 天</small></span><span class="sy-v" v-else>未导入</span></div></div></section>
 
-    <section :class="['zb-card', 'sy-fold', {shut: shut('ai')}]"><div class="zb-ch" @click="tog('ai')"><ic n="link"></ic><h2>AI 连通</h2><span class="grow"></span><a class="zb-link" @click.stop="go('aimgr')">模型与额度 <ic n="chevron"></ic></a></div>
+    <section :class="['zb-card', 'sy-fold', {shut: shut('ai')}]"><div class="zb-ch" @click="tog('ai')"><ic n="link"></ic><h2>AI 连通</h2><span class="grow"></span></div>
       <div class="zb-body">
         <div class="sy-kv"><ic n="sliders"></ic><span>Key</span><span class="sy-v" v-if="o.ai.keys">{{ o.ai.keys.usable }} / {{ o.ai.keys.total }} 可用</span><span class="sy-v" v-else>未登记</span></div>
         <div class="sy-kv"><ic n="camera"></ic><span>视觉模型</span><span class="sy-v">{{ o.ai.vision_model || '—' }}</span></div>
@@ -123,12 +129,12 @@ const SysHome = {
   </div>
 
   <div class="zb-row sy-r3">
-    <section :class="['zb-card', 'sy-fold', {shut: shut('users')}]"><div class="zb-ch" @click="tog('users')"><ic n="users"></ic><h2>账号与权限</h2><span class="grow"></span><a class="zb-link" @click.stop="go('users')">管理账号 <ic n="chevron"></ic></a></div>
+    <section :class="['zb-card', 'sy-fold', {shut: shut('users')}]"><div class="zb-ch" @click="tog('users')"><ic n="users"></ic><h2>账号与权限</h2><span class="grow"></span></div>
       <div class="zb-body"><div class="sy-roles"><div class="sy-role" v-for="r in o.users.by_role" :key="r.role"><b>{{ r.name }}</b><small>{{ SYS_ORG[r.org] || r.org }}</small>
           <span>启用 <b>{{ r.active }}</b><template v-if="r.inactive"> · 停用 {{ r.inactive }}</template></span></div></div>
         <div class="tiny muted mt" v-if="o.users.never_logged.length" :title="o.users.never_logged.join('、')">从未登录：{{ o.users.never_logged.slice(0, 4).join('、') }}<template v-if="o.users.never_logged.length > 4"> 等 {{ o.users.never_logged.length }} 人</template></div></div></section>
 
-    <section :class="['zb-card', 'sy-fold', {shut: shut('audit')}]"><div class="zb-ch" @click="tog('audit')"><ic n="shield"></ic><h2>AI 治理与审计</h2><span class="grow"></span><a class="zb-link" @click.stop="go('audit')">AI 与审计 <ic n="chevron"></ic></a></div>
+    <section :class="['zb-card', 'sy-fold', {shut: shut('audit')}]"><div class="zb-ch" @click="tog('audit')"><ic n="shield"></ic><h2>AI 治理与审计</h2><span class="grow"></span></div>
       <div class="zb-body"><div class="sy-flow" aria-label="AI 治理流程：AI 提取，人工确认，业务处理">
           <div class="sy-step"><ic n="file"></ic><b>AI 提取</b><small>从现场记录、资料中提取</small></div><ic n="chevron"></ic>
           <div class="sy-step"><ic n="check-circle"></ic><b>人工确认</b><small>岗位人员核对事实</small></div><ic n="chevron"></ic>

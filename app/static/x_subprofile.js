@@ -25,7 +25,8 @@ const SubToday = {
 };
 const SubProfilePage = {
   template: `<div class="rs-sp"><page-head title="分包履约画像" purpose="每家分包近 30 天的安全、质量、进度和联系单情况，供管理参考，不排名">
-      <template #meta><template v-if="d && d.items.length">近 {{ d.days }} 天（{{ d.items[0].since }} ~ {{ d.items[0].until }}） · 数字由系统统计 · 不排名、不打分</template><template v-else>近 30 天 · 数字由系统统计 · 不排名、不打分</template> <help-tip label="数字与评语来源" :text="SRC_NOTE"></help-tip></template></page-head>
+      <template #meta><template v-if="d && d.items.length">近 {{ d.days }} 天（{{ d.items[0].since }} ~ {{ d.items[0].until }}） · 数字由系统统计 · 不排名、不打分</template><template v-else>近 30 天 · 数字由系统统计 · 不排名、不打分</template> <help-tip label="数字与评语来源" :text="SRC_NOTE"></help-tip></template>
+      <template #actions><button class="btn sm" type="button" v-if="d && d.items.some((p) => p.eval.can_ai)" :disabled="busy" @click="load(1)">{{ busy ? '生成中…' : 'AI 评语' }}</button></template></page-head>
     <sub-today></sub-today>
     <load-state class="mb" v-if="!d || err" :loading="!d && !err" :error="err" @retry="load"></load-state>
     <template v-if="d"><div class="rs-sp-grid" v-if="d.items.length"><section class="zb-card rs-sp-card" v-for="p in d.items" :key="p.company">
@@ -42,14 +43,18 @@ const SubProfilePage = {
       <div class="zb-card" v-else><div class="zb-empty"><b>还不能按单位统计</b><p>还没有标注所属分包单位的账号。请系统管理员在账号里填写“所属分包单位”。</p></div></div>
     </template></div>`,
   components: { SubToday },
-  data: () => ({ d: null, err: null,
+  data: () => ({ d: null, err: null, busy: false,
     SRC_NOTE: "数字取自系统已确认的隐患、质量问题、进度预警和联系单；评语只在真实模型输出且数字逐个核对通过时标“AI按当前事实整理”，离线模拟模型输出仅供开发测试、不作结论，其余为系统按统计生成的句子。" }),
   mounted() { this.load(); },
   methods: {
     dd(v) { return v === null || v === undefined ? "—" : v + " 天"; },
     // 评语来源如实标注：真实模型且通过数字核对 → AI；离线模拟 → 不作结论；规则兜底 → 系统生成
     evalTag(src) { return src === "ai" ? "AI按当前事实整理" : src === "mock" ? "离线模拟模型输出 · 不作结论" : "系统按当前事实生成"; },
-    async load() { this.err = null; try { this.d = await GET("/api/sub-profiles"); } catch (e) { this.err = e; } },
+    // 打开只取已有评语（run=0 不调用模型，验收 I9）；点“AI 评语”才生成
+    async load(run) {
+      this.err = null; if (run) this.busy = true;
+      try { this.d = await GET("/api/sub-profiles" + (run ? "?run=1" : "")); } catch (e) { if (run) toast(e.message, true); else this.err = e; } finally { this.busy = false; }
+    },
   },
 };
 EXT.route("subs", SubProfilePage);

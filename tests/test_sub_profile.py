@@ -7,7 +7,9 @@ from app.services import sub_profile as svc
 
 def test_profiles_by_company(env):
     _world(env)
-    d = login("eng").get("/api/sub-profiles").json()
+    d0 = login("eng").get("/api/sub-profiles").json()   # 打开页面不调用模型，评语先是系统统计句（验收 I9）
+    assert all(p["eval"]["source"] == "rule" and p["eval"].get("can_ai") for p in d0["items"])
+    d = login("eng").get("/api/sub-profiles?run=1").json()
     by = {p["company"]: p for p in d["items"]}
     assert set(by) == {"甲", "乙"} and d["with_logs"]
     a = by["甲"]

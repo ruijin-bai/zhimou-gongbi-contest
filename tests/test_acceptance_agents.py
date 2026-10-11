@@ -269,7 +269,7 @@ def test_gongbi_number_guard_rejects_invented_numbers(model, kind):
     d = _draft(kind)
     assert MARK not in json.dumps(d["narrative"], ensure_ascii=False), d["narrative"]
     assert MARK not in json.dumps(d["tables"], ensure_ascii=False)
-    assert d["fallback"] and "退回规则版" in d["note"]
+    assert d["fallback"] and "换成规则版" in d["note"]   # 提示写栏目标题（验收 I17）
     assert not [x for x in d["check"] if x["issue"] == "数字未在事实中找到"], d["check"]
     run = _one("SELECT * FROM ai_runs WHERE id=(SELECT ai_run_id FROM gongbi_docs WHERE id=?)", (d["id"],))
     assert run["provider"] == "jiaorong" and run["ok"] == 1 and MARK in run["output_text"]   # 留痕保留模型原文，界面显示的是核对后的文字
@@ -397,7 +397,7 @@ def test_digest_numbers_from_facts_pass(model):
 def _slow(env, user="pm"):
     _world(env)
     aid = _alert(env)
-    r = login(user).get(f"/api/alerts/{aid}/slow-diag")
+    r = login(user).get(f"/api/alerts/{aid}/slow-diag?run=1")   # 点“AI 归因”才调用模型（验收 I9）
     assert r.status_code == 200, r.text
     return r.json()
 
@@ -432,7 +432,7 @@ def test_slowdiag_guarded_ai_text_accepted(model):
 
 def _profiles(env):
     _world(env)
-    r = login("eng").get("/api/sub-profiles")
+    r = login("eng").get("/api/sub-profiles?run=1")   # 点“AI 评语”才调用模型（验收 I9）
     assert r.status_code == 200, r.text
     return {p["company"]: p for p in r.json()["items"]}
 
@@ -567,7 +567,7 @@ def test_dq_review_model_failure_keeps_rule_conclusion(model):
         dq = site_agents.dq_review(conn, ids["m"], env["users"]["admin"])
     finally:
         conn.close()
-    assert "AI预审不可用" in dq["summary"] and dq["risk"] in ("low", "medium", "high") and "score" in dq
+    assert "AI 预审未完成" in dq["summary"] and dq.get("source") == "rule" and "{" not in dq["summary"] and dq["risk"] in ("low", "medium", "high") and "score" in dq
     assert _runs("dq.review")[-1]["ok"] == 0
 
 

@@ -64,11 +64,15 @@ const CircleFeed = {
   template: `<div class="circle"><page-head page="circle"><template #meta><template v-if="d">{{ d.scope }}</template></template><template #actions><div class="seg"><button v-for="v in views" :key="v[0]" :class="{on: view === v[0]}" @click="setView(v[0])">{{ v[1] }}</button></div>
       <button class="btn sm" v-if="social && canWrite" @click="openDm()"><ic n="message"></ic> 私信<span class="badge-dot" v-if="dmUnread">{{ dmUnread }}</span></button>
       <button class="btn sm" v-if="meta.can_publish" @click="compose = !compose"><ic n="megaphone"></ic> 发公告</button>
+      <button class="btn sm" v-if="agentOn && canWrite && view !== 'talk'" :disabled="rv.busy" @click="runReview" title="让智能体为当前列出的动态补点评">{{ rv.busy ? '点评中 · 已 ' + rv.sec + ' 秒' : 'AI 点评' }}</button>
       <button class="btn sm" :disabled="busy" @click="load()">刷新</button></template></page-head>
+  <div class="banner warn" v-if="rv.err">{{ rv.err }} <a @click="runReview">重试</a></div>
+  <div class="tiny muted mb" v-else-if="rv.done">{{ rv.done }}</div>
   <notice-composer v-if="compose && meta.can_publish" :companies="meta.companies" @done="onPublished" @cancel="compose = false"></notice-composer>
   <div class="card cf-board talk-board" v-if="view === 'talk'" v-fit="300"><talk-board :gid="talkG" :tick="talkTick" @open="openTalk"></talk-board></div>
   <template v-else>
   <div class="place-chip chip blue" v-if="place"><ic n="map-pin"></ic> 同地点：{{ place.label }} <a @click="clearPlace">✕ 返回全部</a></div>
+  <div class="place-chip chip blue" v-if="view === 'notes_today'"><ic n="mic"></ic> 只看今日随手记 <a @click="setView('')">✕ 返回全部</a></div>
   <div class="seg mb" v-if="social && view === 'fav'"><button :class="{on: favTab === 'posts'}" @click="favTab = 'posts'">收藏的动态</button><button :class="{on: favTab === 'hl'}" @click="favTab = 'hl'">我的重点</button></div>
   <my-highlights v-if="social && view === 'fav' && favTab === 'hl'" @open="openReader"></my-highlights>
   <load-state v-else-if="!d" loading :error="err" @retry="load()"></load-state>
@@ -139,7 +143,7 @@ const CircleFeed = {
   <dm-panel v-if="social && drawer && drawer.type === 'dm'" :peer="drawer.id" :ref-key="drawer.ref" @close="closeDm" @unread="onUnread"></dm-panel>
   <reader-panel v-if="social && drawer && drawer.type === 'reader'" :post-key="drawer.key" @close="drawer = null" @changed="load(true)"></reader-panel>
   </div>`,
-  data: () => ({ d: null, err: null, posts: [], view: "", place: null, favTab: "posts", repostOpen: "", replyTo: null, drawer: null, dmUnread: 0,
+  data: () => ({ rv: { busy: false, sec: 0, err: "", done: "" }, d: null, err: null, posts: [], view: "", place: null, favTab: "posts", repostOpen: "", replyTo: null, drawer: null, dmUnread: 0,
     VIEWS: [["", "全部"], ["ai", "AI精选"], ["talk", "讨论组"], ["follow", "关注"], ["mine", "我发的"], ["fav", "收藏"]], talkG: 0, talkTick: 0, busy: false, cmt: "", draft: "", store, LEVEL_F, timer: null,
     meta: { can_publish: false, companies: [] }, compose: false, asking: false,
     // 手机：首屏只放前几条动态，“查看更多”每次多放 5 条（电脑端整条动态流在固定高度面板内滚动，见 v-fit）
@@ -200,6 +204,8 @@ const CircleFeed = {
     tx(s) { return isSubOrg() ? actName(s, this.actMap) : s; },  // 分包岗位：作业编码换成作业名
     fromRoute(reload) {
       const q = (store.route && store.route.params) || {};
+      if (q.view === "notes_today") { this.view = "notes_today"; this.place = null; if (reload) this.load(); return; }
+      if (q.dm && this.social) { this.openDm(+q.dm || null); return; }   // 私信通知直达对话（验收 I8）
       if (q.view !== "talk") return;
       this.view = "talk"; this.talkG = +q.g || 0; this.place = null;
       if (reload) this.talkTick++;
@@ -212,24 +218,34 @@ const CircleFeed = {
       catch (e) { if (!this.d) this.err = e; else if (!quiet) toast(e.message, true); } finally { this.busy = false; }
       this.afterLoad();
     },
-    // 新动态：后台补 Agent 同事点评（不挡页面）、公告记已读
-    afterLoad() { this.review(0); this.markNotices(); },
+    // 新动态：公告记已读。Agent 同事点评不再打开即生成，人点“AI 点评”才调用（RJ 10-11 决策，同验收 I9/I10 的做法）
+    afterLoad() { this.markNotices(); },
+    async runReview() {
+      if (this.rv.busy) return;
+      this.rv = { busy: true, sec: 0, err: "", done: "" }; this.seen = new Set();
+      const t = setInterval(() => { this.rv.sec++; }, 1000);
+      try { const n = await this.review(0, true); this.rv.done = n ? `已补 ${n} 条点评` : "没有需要补点评的动态"; }
+      catch (e) { this.rv.err = "AI 点评没有生成：" + (e.message || "请稍后重试"); }
+      finally { clearInterval(t); this.rv.busy = false; }
+    },
     hideAgent(ps) { if (!this.agentOn) ps.forEach((p) => { p.comments = p.comments.filter((c) => !c.agent); p.ai_pick = null; }); return ps; },
+    // 只由 runReview（人点“AI 点评”）调用；返回新增的点评条数，失败抛出由按钮旁如实显示
     async review(round) {
-      if (!this.agentOn) return;
+      if (!this.agentOn || !this.canWrite) return 0;   // 领导、管理员只读，不触发 Agent 点评生成
       const keys = this.posts.filter((p) => this.RELAY_KINDS.includes(p.kind) && !this.seen.has(p.key)).map((p) => p.key).slice(0, 30);
-      if (!keys.length || round > 4) return;
+      if (!keys.length || round > 4) return 0;
       keys.forEach((k) => this.seen.add(k));
-      try {
-        const r = await POST("/api/circle/review", { keys });
-        for (const [k, cs] of Object.entries(r.comments || {})) {
-          const p = this.posts.find((x) => x.key === k);
-          if (p) p.comments = p.comments.concat(cs.filter((c) => !p.comments.some((x) => x.id === c.id)))
-            .sort((a, b) => (a.time < b.time ? -1 : a.time > b.time ? 1 : (a.agent ? 1 : 0) - (b.agent ? 1 : 0)));
-        }
-        if (r.picked) this.load(true);
-        else if ((r.left || []).length) { r.left.forEach((k) => this.seen.delete(k)); this.review(round + 1); }
-      } catch (_) { /* 点评是附加信息，失败不打扰 */ }
+      const r = await POST("/api/circle/review", { keys });
+      let n = 0;
+      for (const [k, cs] of Object.entries(r.comments || {})) {
+        const p = this.posts.find((x) => x.key === k);
+        if (!p) continue;
+        const add = cs.filter((c) => !p.comments.some((x) => x.id === c.id)); n += add.length;
+        p.comments = p.comments.concat(add).sort((a, b) => (a.time < b.time ? -1 : a.time > b.time ? 1 : (a.agent ? 1 : 0) - (b.agent ? 1 : 0)));
+      }
+      if (r.picked) this.load(true);
+      else if ((r.left || []).length) { r.left.forEach((k) => this.seen.delete(k)); n += await this.review(round + 1); }
+      return n;
     },
     markNotices() {
       if (!this.canRead) return;

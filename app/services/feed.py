@@ -11,6 +11,7 @@ scope_ids（本单位范围）仍给部位档案等非现场圈功能使用。
 from __future__ import annotations
 
 from collections import defaultdict
+from datetime import date
 
 from .. import roles as R
 from ..db import all_, audit, dumps, insert, loads, now_iso, one
@@ -112,6 +113,19 @@ def _log_raw(lg: dict) -> dict:
     works = [str(w.get("desc") or w.get("process") or "").strip() for w in c.get("works", [])]
     return {"key": f"log:{lg['id']}", "kind": "log", "author_id": lg["author_id"], "time": lg["submitted_at"],
             "log": lg, "works": [w for w in works if w][:3], "work_total": len(works), "issues": len(c.get("issues", []))}
+
+
+def notes_today_feed(conn, user: dict, before: str | None, limit: int) -> dict:
+    q, p = "SELECT * FROM notes WHERE project_id=? AND note_date=?", [user["project_id"], date.today().isoformat()]
+    if before:
+        q += " AND created_at<?"
+        p.append(before)
+    rows = all_(conn, q + " ORDER BY created_at DESC LIMIT ?", p + [limit + 1])
+    more = len(rows) > limit
+    raws = [_note_raw(conn, n) for n in rows[:limit]]
+    total = one(conn, "SELECT COUNT(*) n FROM notes WHERE project_id=? AND note_date=?", (user["project_id"], date.today().isoformat()))["n"]
+    out = _assemble(conn, user, raws, raws[-1]["time"] if more and raws else None)
+    return {**out, "scope": f"今日随手记 {total} 条 · 全项目", "total": total}
 
 
 def _notes(conn, user, ids, before, limit, geo=None) -> list[dict]:
@@ -276,7 +290,7 @@ def _post(conn, user, raw: dict, people: dict[int, dict], hazards: dict[int, lis
         base["tag"] = "周进度确认" if week else "施工日志"
         span = f"{lg['log_date']} ~ {lg['period_end']}" if week and lg["period_end"] else lg["log_date"]
         head = f"提交了{'本周进度确认' if week else '施工日志'}（{span}）"
-        body = "；".join(raw["works"])
+        body = "；".join(w.strip().rstrip("。；;") for w in raw["works"] if w and w.strip())   # 每条去掉句末标点再连，避免“。；”（D5）
         base["text"] = head + (f"\n{body}" + (f" 等 {raw['work_total']} 项" if raw["work_total"] > len(raw["works"]) else "") if body else "")
         if raw["issues"]:
             base["text"] += f"\n记录了 {raw['issues']} 个问题。"
@@ -382,6 +396,8 @@ def feed(conn, user: dict, before: str | None = None, limit: int = 20, mine: boo
         return fav_feed(conn, user, before, limit)
     if view == "ai":
         return pick_feed(conn, user, before, limit)
+    if view == "notes_today":   # 首页“今日随手记 N · 全项目”点进来：只列今天的随手记，条数与首页同源（验收 I5）
+        return notes_today_feed(conn, user, before, limit)
     ids = None   # 现场圈全项目可见
     if mine:
         ids = [user["id"]]

@@ -1,4 +1,4 @@
-"""仿真剧本（事实底账）：莱基深水港疏港路·新开工，2026-09-07 开工，回放到 2026-10-05。
+"""仿真剧本（事实底账）：深水港疏港路·新开工，2026-09-07 开工，回放到 2026-10-05。
 
 这里只写“现场真实发生了什么”（工程量、天气、事件、谁拍了哪张照片、隐患与整改、单据、会议纪要……）。
 系统里的 AI 产出（日志、识别、预警分析、简报、周报……）一律由回放引擎调用真实接口、交融真实模型现场生成；
@@ -14,7 +14,7 @@ START = date(2026, 9, 7)          # 周一，开工
 END = date(2026, 10, 5)           # 回放到这天（周一）；10-06 起留给现场演示
 SEED = 20260907
 
-PROJECT = {"name": "莱基深水港疏港路（仿真）", "code": "LEKKI-SIM2", "currency": "USD"}
+PROJECT = {"name": "深水港疏港路（仿真）", "code": "DEMO-SIM2", "currency": "USD"}
 
 # ---------------------------------------------------------------- 人员（姓名均为虚构）
 COMPANY_A = "甲分包单位（路基桥梁）"
@@ -103,7 +103,7 @@ def cpm(durs: dict[str, float] | None = None) -> dict[str, dict]:
     return {c: {"es": es[c], "ef": ef[c], "ls": ls[c], "lf": lf[c], "tf": round(ls[c] - es[c], 1)} for c in es}
 
 
-# ---------------------------------------------------------------- 天气（拉各斯雨季）
+# ---------------------------------------------------------------- 天气（沿海城市雨季）
 # 日期 → (天气文字, 可施工比例)
 WEATHER = {
     "2026-09-10": ("多云转阵雨 29℃，午后阵雨约2小时", 0.75),
@@ -114,7 +114,7 @@ WEATHER = {
     "2026-10-03": ("多云有阵雨 29℃，傍晚阵雨", 0.85),
 }
 DEFAULT_WEATHER = ["晴间多云 31℃", "多云 30℃", "晴 32℃", "多云 29℃"]
-HOLIDAY = {"2026-10-01": "尼日利亚独立日，当地工人放假，仅中方人员值班"}
+HOLIDAY = {"2026-10-01": "项目所在国独立日，当地工人放假，仅中方人员值班"}
 
 
 def weather(d: date) -> tuple[str, float]:
@@ -311,17 +311,17 @@ REJECT_REASON = "误报：画面中人员防护齐全、作业区已设置防护
 
 # ---------------------------------------------------------------- 单据（材料与砼）
 TICKETS = [
-    {"date": "2026-09-14", "by": "qian", "kind": "material_receipt", "doc": {"supplier": "Lekki Coastal Steel Supply Ltd.", "ticket_no": "MR-20260914-03", "vehicle": "KJA 731 BC",
+    {"date": "2026-09-14", "by": "qian", "kind": "material_receipt", "doc": {"supplier": "Coastal Steel Supply Ltd.", "ticket_no": "MR-20260914-03", "vehicle": "KJA 731 BC",
      "issued_at": "2026-09-14", "material": "热轧带肋钢筋", "spec": "HRB400E Φ25", "qty": 32.46, "unit": "t", "batch_no": "25H0912-117", "part": "立交桥桩基钢筋笼", "receiver": "钱志远"}},
-    {"date": "2026-09-14", "by": "qian", "kind": "cert", "doc": {"supplier": "Lekki Coastal Steel Supply Ltd.", "ticket_no": "QC-2509-4471", "issued_at": "2026-09-12",
+    {"date": "2026-09-14", "by": "qian", "kind": "cert", "doc": {"supplier": "Coastal Steel Supply Ltd.", "ticket_no": "QC-2509-4471", "issued_at": "2026-09-12",
      "material": "热轧带肋钢筋", "spec": "HRB400E Φ25", "qty": 32.46, "unit": "t", "batch_no": "25H0912-117",
      "items": [("屈服强度 MPa", "≥400", "455"), ("抗拉强度 MPa", "≥540", "612"), ("断后伸长率 %", "≥16", "21.5"), ("最大力总伸长率 %", "≥9", "12.8")]}},
-    {"date": "2026-09-14", "by": "qian", "kind": "material_receipt", "doc": {"supplier": "Lekki Coastal Steel Supply Ltd.", "ticket_no": "MR-20260914-04", "vehicle": "KJA 731 BC",
+    {"date": "2026-09-14", "by": "qian", "kind": "material_receipt", "doc": {"supplier": "Coastal Steel Supply Ltd.", "ticket_no": "MR-20260914-04", "vehicle": "KJA 731 BC",
      "issued_at": "2026-09-14", "material": "热轧带肋钢筋", "spec": "HRB400E Φ12", "qty": 8.12, "unit": "t", "batch_no": "25H0910-083", "part": "立交桥桩基箍筋", "receiver": "钱志远"}},
 ]
 # 桩基混凝土：每根桩约 34 m³（Φ1.2m×30m），每车 8 m³；技术员只拍每根桩的第一车小票
-LAGOON = {"supplier": "拉各斯泻湖商品混凝土有限公司", "plant_en": "LAGOON READYMIX LTD.  LEKKI BATCHING PLANT"}
-OWN_PLANT = {"supplier": "莱基疏港路项目拌合站", "plant_en": "LEKKI ROAD PROJECT BATCHING PLANT"}
+LAGOON = {"supplier": "沿海泻湖商品混凝土有限公司", "plant_en": "LAGOON READYMIX LTD.  DEMO BATCHING PLANT"}
+OWN_PLANT = {"supplier": "深水港疏港路项目拌合站", "plant_en": "DEMO ROAD PROJECT BATCHING PLANT"}
 
 # ---------------------------------------------------------------- 例会纪要（周一上午，项目经理贴进统一输入框）
 MEETINGS = {
@@ -340,7 +340,7 @@ MEETINGS = {
 1. 桩基累计完成约8根，比计划少，原因是钻机迟到、23日大雨、25~26日液压故障。第二台旋挖钻今天进场，钱志远负责10月5日前双机正常作业。
 2. 软基换填明天开始，赵建国负责，压实度每层自检，试验室配合。
 3. 2#圆管涵管节已到场，孙海涛明天开始安装。
-4. 国庆和尼日利亚独立日期间，当地工人放假一天，王涛负责节前安全检查。
+4. 国庆和项目所在国独立日期间，当地工人放假一天，王涛负责节前安全检查。
 5. 周报中的桩基滞后要附赶工措施，郑伟负责。""",
     "2026-10-05": """纪要：第4周生产例会（10月5日）
 1. 双机作业后桩基日均约1.4根，钱志远继续保持，力争10月底追回5天。
@@ -372,8 +372,8 @@ COMMANDS = [  # 指令只能针对系统里已有的整改事项（派单/催办
 ]
 # 公告
 ANNOUNCEMENTS = [
-    ("2026-09-07", "pm", "莱基疏港路今天正式开工。请各分包严格落实三级安全教育，所有人员进场必须佩戴安全帽、穿反光衣。"),
-    ("2026-09-30", "safety", "10月1日尼日利亚独立日，当地工人放假一天。节前请各单位完成安全自查，节日期间值班人员保持电话畅通。"),
+    ("2026-09-07", "pm", "深水港疏港路今天正式开工。请各分包严格落实三级安全教育，所有人员进场必须佩戴安全帽、穿反光衣。"),
+    ("2026-09-30", "safety", "10月1日项目所在国独立日，当地工人放假一天。节前请各单位完成安全自查，节日期间值班人员保持电话畅通。"),
 ]
 # 数据审核要抓到的问题（人为制造的真实错误）
 DQ_TRAPS = {

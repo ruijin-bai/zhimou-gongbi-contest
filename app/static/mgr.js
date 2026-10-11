@@ -11,6 +11,7 @@ const Workbench = {
 const fbToday = () => (store.me && store.me.today) || new Date().toISOString().slice(0, 10);
 const fbMonday = () => { const d = new Date(fbToday() + "T00:00:00"); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 const FB_ONLY = {
+  open: { name: "未闭环（不含质控提醒）", status: "active", test: (f) => f.kind !== "qc_reminder" },   // 首页“质量未闭环 N”点进来看到的就是这 N 条（验收 I5）
   new: { name: "今日新增", status: "", test: (f) => (f.created_at || "").slice(0, 10) === fbToday() },
   overdue: { name: "超期", status: "active", test: (f) => !!f.overdue },
   high: { name: "高风险", status: "active", test: (f) => f.level === "high" },
@@ -157,7 +158,7 @@ const SafetyHub = {
 // 一屏化（10-10）：电脑一屏——方法说明收进“预测方法”小问号；节点至多 3 个（其余“查看全部”抽屉）；关键路径面板内滚动；赶工方案全文、雨季与节假日明细进抽屉。
 const Forecast = {
   template: `<div class="rp-fc">
-  <div class="rp-bar"><span class="rp-meta" v-if="f && !f.none"><span class="chip">模拟预测</span>计算于 {{ fmtDT(f.created_at) }} · {{ f.iterations }} 次模拟 · P6 数据日期 {{ f.data_date || '—' }}
+  <div class="rp-bar"><span class="rp-meta" v-if="f && !f.none"><span class="chip">模拟预测</span>计算于 {{ fmtDT(f.created_at) }} · {{ f.iterations }} 次模拟 · P6 数据日期 {{ f.data_date || '—' }}<b class="tc-over" v-if="f.stale_p6"> · 与当前 P6 批次（{{ f.current_data_date }}）不一致，预测已过期，请重新预测</b>
       <help-tip v-if="loaded" label="预测方法" :text="methodNote"></help-tip></span><span class="grow"></span>
     <button class="btn sm" v-if="can('progress_ops')" :disabled="busy" @click="run"><ic n="refresh"></ic>{{ busy ? '计算中' : '重新预测' }}</button></div>
   <empty-state v-if="loaded && (!f || f.none)" :reason="emptyReason" :action="emptyAction"></empty-state>
@@ -191,7 +192,7 @@ const Forecast = {
           <span class="chip orange" v-if="hasRec && recStale" title="方案生成后预测已重新计算">基于旧预测</span></div>
         <div class="zb-body">
           <template v-if="!hasRec"><div class="zb-empty rp-none"><b>尚未生成</b>：当前没有赶工方案。<template v-if="!can('progress_ops')">由项目经理或工程主管生成后，在这里查阅。</template></div>
-            <div class="zb-btns" v-if="can('progress_ops')"><button class="btn sm" :disabled="rbusy" @click="recover"><ic n="sparkles"></ic>{{ rbusy ? '生成中' : '生成赶工方案' }}</button></div>
+            <div class="zb-btns" v-if="can('progress_ops')"><button class="btn sm" :disabled="rbusy" @click="recover"><ic n="sparkles"></ic>{{ rbusy ? '生成中 · 已 ' + rsec + ' 秒' : '生成赶工方案' }}</button></div>
             <div class="tiny muted" v-if="can('progress_ops')">按当前预测提出措施，系统按 CPM 复算提前天数</div></template>
           <template v-else>
             <div class="rp-rec-l"><span :class="['zb-src', {ai: recSrc.startsWith('AI')}]">{{ recSrc }}</span><zb-clamp :text="rec.diagnosis" :lines="2" title="赶工方案 · 诊断"></zb-clamp>
@@ -212,7 +213,7 @@ const Forecast = {
           <span class="chip green" v-for="(g, c) in m.gain" :key="c" v-show="g > 0">{{ tName(c) }} 提前 {{ fmtN(g) }} 天</span></div>
         <div class="small mt">组合效果（系统复算）：<span v-for="t in rec.verified.targets" :key="t.code" class="chip blue" style="margin-right:4px">{{ t.short_name || t.name }} {{ t.base }} → {{ t.after }}（{{ t.gain_days > 0 ? '提前' + fmtN(t.gain_days) + '天' : '无改善' }}）</span></div>
         <div class="tiny muted mt">{{ rec.note }}</div></div>
-      <template #foot v-if="can('progress_ops')"><button class="btn sm" :disabled="rbusy" @click="recover"><ic n="refresh"></ic>{{ rbusy ? '生成中' : '按当前预测重新生成' }}</button></template></zb-drawer>
+      <template #foot v-if="can('progress_ops')"><button class="btn sm" :disabled="rbusy" @click="recover"><ic n="refresh"></ic>{{ rbusy ? '生成中 · 已 ' + rsec + ' 秒' : '按当前预测重新生成' }}</button></template></zb-drawer>
     <zb-drawer v-if="showRain && rain && !rain.none" title="雨季与节假日" @close="showRain = false">
       <div class="tiny muted">P6 日历的例外日 · 未来 {{ rain.window_days }} 天</div>
       <div class="rn-cal" v-for="c in rain.calendars" :key="c.clndr_id"><b>{{ c.name }}</b><span class="tiny muted">{{ c.activities }} 项作业</span>
@@ -223,7 +224,7 @@ const Forecast = {
       <div class="tiny muted mt">{{ rain.note }}</div></zb-drawer>
   </template>
   <load-state v-else loading></load-state></div>`,
-  data: () => ({ f: null, rec: null, busy: false, rbusy: false, loaded: false, hasPlan: false, cd: null, rain: null, showRec: false, showRain: false }),
+  data: () => ({ f: null, rec: null, busy: false, rbusy: false, rsec: 0, loaded: false, hasPlan: false, cd: null, rain: null, showRec: false, showRain: false }),
   computed: {
     // 预测方法与日历口径收进“预测方法”小问号（一屏化：不常驻一行说明）
     methodNote() { const f = this.f || {}; return [f.method, f.calendar_note, f.legacy ? f.legacy.note + "，完工 " + f.legacy.project_finish : ""].filter(Boolean).join(" · "); },
@@ -265,7 +266,11 @@ const Forecast = {
     at(m, s) { const [lo, hi] = this.span(m); return ((Date.parse(s) - lo) / (hi - lo) * 100).toFixed(2) + "%"; },
     band(m) { const a = parseFloat(this.at(m, m.p50)), b = parseFloat(this.at(m, m.p80)); return { left: a + "%", width: Math.max(b - a, 1) + "%" }; },
     async run() { this.busy = true; try { await POST("/api/schedule/forecast", {}); this.f = await GET("/api/schedule/forecast"); this.extras(); } catch (e) { toast(e.message, true); } finally { this.busy = false; } },
-    async recover() { this.rbusy = true; try { this.rec = await POST("/api/schedule/recovery"); this.showRec = true; } catch (e) { toast(e.message, true); } finally { this.rbusy = false; } },
+    // 赶工方案要调用模型，可能要几分钟：按钮上显示已等秒数（验收 I10，不编造预计时长）
+    async recover() {
+      this.rbusy = true; this.rsec = 0; const t = setInterval(() => { this.rsec++; }, 1000);
+      try { this.rec = await POST("/api/schedule/recovery"); this.showRec = true; } catch (e) { toast(e.message, true); } finally { clearInterval(t); this.rbusy = false; }
+    },
   },
 };
 
@@ -285,10 +290,10 @@ const OutputChart = {
   props: { series: { type: Array, required: true }, currency: String, fit: Boolean },
   template: `<div class="oc" ref="box">
     <div class="oc-sum" v-if="sums.rec !== null || sums.sys !== null">
-      <div v-if="sums.rec !== null"><small>周记录合计（{{ shown.length }} 周）</small><b>{{ m(sums.rec) }}</b><span>{{ currency }}</span></div>
-      <div v-if="sums.sys !== null"><small>系统统计合计 · 核定 {{ m(sums.appr) }} / 自报 {{ m(sums.self) }}</small><b class="sys">{{ m(sums.sys) }}</b><span>{{ currency }}</span></div>
+      <div v-if="sums.rec !== null"><small>周记录合计（{{ recWeeks }} 周）</small><b>{{ m(sums.rec) }}</b><span>{{ currency }}</span></div>
+      <div v-if="sums.sys !== null"><small>系统统计合计<template v-if="split"> · 核定 {{ m(sums.appr) }} / 自报 {{ m(sums.self) }}</template></small><b class="sys">{{ m(sums.sys) }}</b><span>{{ currency }}</span></div>
       <div v-if="trend"><small>最近一周（{{ trend.week }}）比上一周</small><b :class="trend.d >= 0 ? 'up' : 'down'">{{ trend.d >= 0 ? '▲' : '▼' }} {{ Math.abs(trend.pct) }}%</b><span>{{ trend.src }}</span></div></div>
-    <div class="oc-legend"><span><i class="k rec"></i>周记录</span><span><i class="k appr"></i>系统统计 · 核定</span><span><i class="k self"></i>系统统计 · 自报</span><span v-if="hasPlan"><i class="k plan"></i>更新计划</span><span v-if="base.length"><i class="k base"></i>基准计划</span></div>
+    <div class="oc-legend"><span><i class="k rec"></i>周记录</span><template v-if="split"><span><i class="k appr"></i>系统统计 · 核定</span><span><i class="k self"></i>系统统计 · 自报</span></template><span v-else><i class="k appr"></i>系统统计</span><span v-if="hasPlan"><i class="k plan"></i>更新计划</span><span v-if="base.length"><i class="k base"></i>基准计划</span></div>
     <div class="oc-wrap" :style="{height: H + 'px'}" @mouseleave="hv = -1">
       <svg :width="w" :height="H" role="img" :aria-label="'近 ' + shown.length + ' 周产值'">
         <defs><linearGradient id="ocRec" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a86d8"/><stop offset="1" stop-color="#0d5ea8"/></linearGradient>
@@ -312,12 +317,15 @@ const OutputChart = {
       <div v-if="hv >= 0 && shown[hv]" class="bc-tip" :style="tip"><b>{{ shown[hv].week }} 这一周</b>
         <template v-if="shown[hv].has"><div v-if="shown[hv].rec !== null"><span>周记录</span>{{ m(shown[hv].rec) }} {{ currency }}</div>
           <div v-if="shown[hv].sys !== null"><span>系统统计</span>{{ m(shown[hv].sys) }} {{ currency }}</div>
-          <div v-if="shown[hv].sys !== null"><span>　其中核定 / 自报</span>{{ m(shown[hv].appr || 0) }} / {{ m(shown[hv].self || 0) }}</div>
+          <div v-if="split && shown[hv].sys !== null"><span>　其中核定 / 自报</span>{{ m(shown[hv].appr || 0) }} / {{ m(shown[hv].self || 0) }}</div>
           <div v-if="shown[hv].plan"><span>更新计划</span>{{ m(shown[hv].plan) }} {{ currency }}</div>
           <div v-if="shown[hv].base"><span>基准计划</span>{{ m(shown[hv].base) }} {{ currency }}</div></template>
         <div v-else><span>无数据</span>—</div></div></div></div>`,
   data: () => ({ hv: -1, w: 700, H: 300, L: 56, R: 12, T: 26 }),
   computed: {
+    // 项目经理的接口不给自报/核定拆分（日志审核数据）：只写系统统计合计，不显示“核定 X / 自报 0”这种错误拆分（验收 I6）
+    split() { return this.series.some((s) => "system_self" in s); },
+    recWeeks() { return this.shown.filter((x) => x.rec !== null).length; },   // 合计写实际有周记录的周数，不按图上显示的周数（D4）
     rows() {
       return this.series.map((s) => {
         const rec = s.record_actual ?? null, sys = s.system ?? null, plan = s.planned ?? null;

@@ -498,7 +498,7 @@ def main() -> None:
     ap.add_argument("--boq", required=True, type=Path)
     ap.add_argument("--rules", required=True, type=Path)
     ap.add_argument("--out", required=True, type=Path)
-    ap.add_argument("--prefix", default="产值反推")
+    ap.add_argument("--prefix", default="LOT1_产值反推")
     ap.add_argument("--denominator", choices=("contract", "p6"), default="contract", help="组完成比例的分母口径")
     ap.add_argument("--link", default="", help="项目编码：把关联写成系统“建议”映射（不改已确认/已驳回的）")
     a = ap.parse_args()

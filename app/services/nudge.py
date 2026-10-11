@@ -235,7 +235,13 @@ def _notif_link(items: list[dict], user: dict) -> dict | None:
             continue
         params = dict(p.split("=", 1) for p in qs.split("&") if "=" in p)
         return {"route": name, "params": params}
-    return None
+    return _FALLBACK_LINK.get(user.get("role"))
+
+
+# 所催事项都没有本岗位能打开的单条链接（如数据缺口的周确认页只给技术员）：给本岗位的筛好列表，不让消息点了只标已读（验收 I8）
+_FALLBACK_LINK = {"eng_sup": {"route": "chase", "params": {}}, "safety_sup": {"route": "safety", "params": {"only": "overdue"}},
+                  "manager": {"route": "safety", "params": {"only": "overdue"}}, "tech": {"route": "home", "params": {}},
+                  "sub_safety": {"route": "shome", "params": {}}}
 
 
 def _target(ttype: str, key: str, area: str, subject: str, due: date, today: date, owner_id: int | None, link: str, ref_id: int | None = None) -> dict:

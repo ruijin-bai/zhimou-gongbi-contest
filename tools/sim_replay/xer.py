@@ -98,7 +98,7 @@ def build(truth: dict | None = None, dd: date | None = None) -> str:
     recalc = dd or S.START
     out = ["ERMHDR\t19.12", "%T\tPROJECT", "%F\tproj_id\tproj_short_name\tlast_recalc_date", f"%R\t1\t{S.PROJECT['code']}\t{recalc} 08:00",
            "%T\tCALENDAR", "%F\tclndr_id\tclndr_name\tday_hr_cnt", "%R\t1\t7天工作制\t8",
-           "%T\tPROJWBS", "%F\twbs_id\tproj_id\tparent_wbs_id\twbs_short_name\twbs_name\tproj_node_flag", "%R\tROOT\t1\t\tROOT\t莱基疏港路\tY"]
+           "%T\tPROJWBS", "%F\twbs_id\tproj_id\tparent_wbs_id\twbs_short_name\twbs_name\tproj_node_flag", "%R\tROOT\t1\t\tROOT\t深水港疏港路\tY"]
     out += [f"%R\t{w}\t1\tROOT\t{w}\t{w}\tN" for w in wbs_names]
     out += ["%T\tTASK", "%F\ttask_id\tproj_id\twbs_id\tclndr_id\tphys_complete_pct\ttask_code\ttask_name\ttask_type\tstatus_code\ttotal_float_hr_cnt"
             "\tremain_drtn_hr_cnt\ttarget_drtn_hr_cnt\tact_start_date\tact_end_date\tearly_start_date\tearly_end_date\ttarget_start_date\ttarget_end_date\tdriving_path_flag"]

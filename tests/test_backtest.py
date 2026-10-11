@@ -5,7 +5,6 @@
 """
 import hashlib
 import io
-import os
 import json
 import re
 import sqlite3
@@ -132,7 +131,7 @@ def _add_user(env, username, role, project_id=None):
 
 GOLDEN_SAMPLE = "e42c32217b2ce69720034d58e755a9c65f39d592edbf1297938d3d804a0211ae"
 GOLDEN_REAL_PHYS = "2f01a7ccc82270c77d6355b1e6d9f3c4bab8a74f01db2f32df2605e9c654eac3"
-REAL_XER = Path(os.environ.get("ZB_REAL_XER", "__no_real_xer__.xer"))  # 本机真实基线 XER，不随仓库提供
+REAL_XER = Path(r"real_xer_not_included.xer")
 
 
 def _h(x) -> str:

@@ -27,23 +27,23 @@ def book(day=DAY, daily_bad=False) -> bytes:
     rows = [
         ["生产日报/Daily Report"],
         ["单位名称 /Section Name", "合成测试分部", None, "施工日期 /Construction date", d, "填报人 Reporter", "测试甲", "复核人 Reviewer", "测试乙"],
-        ["天气情况 /Weather", "晴", None, "中方人员数量 /Number of Chinese personnel", 12, "属地员工数量 /Number of Nigerian employees", 30,
+        ["天气情况 /Weather", "晴", None, "中方人员数量 /Number of Chinese personnel", 12, "属地员工数量 /Number of local employees", 30,
          "进场设备台（套）/Number of Equipment Onsite", "9台(挖掘机2台、装载机1台、自卸车6台)"],
         [],
         ["当日施工内容简述（形象进度）/Overview of construction content on"],
-        ["标段A:"],
+        ["SEC1:"],
         ["1、3#墩桩基钻孔 2 根"],
         ["2、路基填筑 CH1+000-CH1+200 填方 300m³"],
-        ["半岛段："],
+        ["示例港区半岛："],
         ["无"],
         ["现场进度情况/On site Progress"],
         ["序号/No", "施工区域/Construction Area", "施工内容/Construction content", "单位/unit", "设计总工程量/Total design quantity",
          "完成桩号段落/位置Complete Chainage /Location", "当日完成数量/Daily completed quantity", "累计完成数量/Accumulated completed quantity",
          "累计完成占比/Accumulated completion percentage"],
-        [1, "标段A", "桩基钻孔", "根", 16, "3#墩", "约2" if daily_bad else 2, 10, 0.625],
+        [1, "SEC1", "桩基钻孔", "根", 16, "3#墩", "约2" if daily_bad else 2, 10, 0.625],
         [2, None, "路基填筑/ subgrade", "m³", "\\", "CH1+000-CH1+200", 300, 5200, "\\"],
         [None, None, None, None, None, "CH1+300-CH1+350", None, 800, None],
-        [3, "半岛段", "清表", "㎡", "\\", "", "\\", 4000, "\\"],
+        [3, "示例港区半岛", "清表", "㎡", "\\", "", "\\", 4000, "\\"],
         ["明日施工计划/Tomorrow's Construction Plan"],
         ["1、3#墩桩基钻孔"],
         ["2、路基填筑"],
@@ -80,13 +80,13 @@ def test_parse_template_fields_rows_and_unknowns():
     assert (p["date"], p["section"], p["weather"], p["reporter"], p["reviewer"]) == (DAY, "合成测试分部", "晴", "测试甲", "测试乙")
     assert (p["staff_cn"], p["staff_local"], p["equipment_count"]) == (12, 30, 9)
     assert p["machines"] == [{"name": "挖掘机", "count": 2}, {"name": "装载机", "count": 1}, {"name": "自卸车", "count": 6}]
-    assert p["overview"] == [{"group": "标段A", "text": "3#墩桩基钻孔 2 根"}, {"group": "标段A", "text": "路基填筑 CH1+000-CH1+200 填方 300m³"}]
+    assert p["overview"] == [{"group": "SEC1", "text": "3#墩桩基钻孔 2 根"}, {"group": "SEC1", "text": "路基填筑 CH1+000-CH1+200 填方 300m³"}]
     rows = p["rows"]
     assert [(r["area"], r["content"], r["unit"], r["daily"], r["cum"]) for r in rows] == [
-        ("标段A", "桩基钻孔", "根", 2.0, 10.0),
-        ("标段A", "路基填筑/ subgrade", "m³", 300.0, 5200.0),
-        ("标段A", "路基填筑/ subgrade", "m³", None, 800.0),   # 合并单元格续行：内容、单位沿用上一行；当日数量空白 → 未填，不当 0
-        ("半岛段", "清表", "㎡", None, 4000.0),               # “\\” → 未填
+        ("SEC1", "桩基钻孔", "根", 2.0, 10.0),
+        ("SEC1", "路基填筑/ subgrade", "m³", 300.0, 5200.0),
+        ("SEC1", "路基填筑/ subgrade", "m³", None, 800.0),   # 合并单元格续行：内容、单位沿用上一行；当日数量空白 → 未填，不当 0
+        ("示例港区半岛", "清表", "㎡", None, 4000.0),               # “\\” → 未填
     ]
     assert rows[0]["pct_text"] == "62.5%" and rows[1]["pct_text"] == "" and rows[1]["design"] is None
     assert [t["text"] for t in p["tomorrow"]] == ["3#墩桩基钻孔", "路基填筑"]
@@ -117,7 +117,7 @@ def test_parse_rejects_xls_and_non_excel():
 def test_candidates_are_suggestions_by_chainage_and_keywords():
     acts = [{"code": "C1", "name": "Subgrade Fill - CH0+950-CH1+250"}, {"code": "C2", "name": "Subgrade Fill - CH3+000-CH4+000"},
             {"code": "C3", "name": "Bored Pile Construction"}, {"code": "C4", "name": "3#墩桩基施工"}]
-    road = {"area": "标段A", "content": "填砂路基/ subgrade", "location": "CH1+000-CH1+200"}
+    road = {"area": "SEC1", "content": "填砂路基/ subgrade", "location": "CH1+000-CH1+200"}
     assert [c["code"] for c in x.candidates(acts, road)][:2] == ["C1", "C2"]  # 桩号重叠的排前面
     pile = {"area": "", "content": "桩基钻孔", "location": "3#墩"}
     assert {c["code"] for c in x.candidates(acts, pile)} >= {"C3", "C4"}
@@ -162,7 +162,7 @@ def test_preview_then_confirm_creates_draft_log(env):
     assert lg["status"] == "draft" and lg["period"] == "day" and lg["weather"] == "晴" and lg["submitted_at"] is None
     c = dbmod.loads(lg["content_json"], {})
     assert c["progress"] == [{"activity_code": "A1010", "qty": 1.5, "unit": "根", "pct": None,
-                              "note": "Excel：标段A 桩基钻孔（3#墩），累计 10根，累计占比 62.5%", "sources": ["X"]}]
+                              "note": "Excel：SEC1 桩基钻孔（3#墩），累计 10根，累计占比 62.5%", "sources": ["X"]}]
     descs = [w["desc"] for w in c["works"]]
     assert "3#墩桩基钻孔 2 根" in descs and any("路基填筑" in s and "当日完成 300m³" in s for s in descs)
     assert not any("清表" in s for s in descs)  # 不导入的行不写

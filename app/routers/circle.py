@@ -106,7 +106,7 @@ def register(app) -> None:
                 "can_write": user["role"] != "leader"}
 
     @app.post("/api/circle/review")
-    def circle_review(body: ReviewIn, user=Depends(viewer), conn=Depends(M.db)):
+    def circle_review(body: ReviewIn, user=Depends(writer), conn=Depends(M.db)):   # 领导只读：打开现场圈不触发 Agent 生成点评（验收 I9）
         """打开现场圈后异步调用：补 Agent 点评；顺带让 Agent 从近 7 天的真实动态里挑 AI精选（节流：同项目 10 分钟内最多试一次，每天最多自动一轮）。"""
         if not feat_svc.enabled(conn, user["project_id"], "circle_agent"):   # 项目设置里隐藏了“现场圈 Agent”：不再生成点评与精选
             return {"comments": {}, "left": [], "picked": False}

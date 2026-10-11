@@ -128,7 +128,7 @@ def facts_text(conn, project_id: int, k: dict, pf: dict | None = None) -> str:
     pf = pf or F.project_facts(conn, project_id)
     L = [f"日期 {k['day']}"]
     # 依据第一行就写明所用 P6 批次；每条预警写明判定日与它判定时的 P6 数据日期
-    L.append(f"进度预警：红{k['alerts']['red']} 橙{k['alerts']['orange']} 黄{k['alerts']['yellow']}"
+    L.append(f"待确认进度预警：红{k['alerts']['red']} 橙{k['alerts']['orange']} 黄{k['alerts']['yellow']}"
              + (f"（P6 数据日期 {pf['p6_data_date']}）" if pf.get("p6_data_date") else ""))
     for a in all_(conn, "SELECT * FROM alerts WHERE project_id=? AND status='open' AND rule<>'stale' AND level IN ('red','orange') ORDER BY level DESC, id LIMIT 5", (project_id,)):
         L.append(f"[W{a['id']}] {a['title']}（{F.judged_on(a['as_of'], F.import_date(conn, a['import_id']))}）；分析：{F.alert_judgement(conn, a)}")
@@ -380,7 +380,10 @@ def basis(content: dict) -> dict:
     """简报依据：生成方式 + 事实底稿各行（只留进度、质量、安全；去掉日期行、分节标题和写给模型的约束语）。"""
     lines = []
     for raw in (content.get("facts") or "").splitlines():
-        t = _ZERO_HINT.sub("", raw).strip()
+        # 旧简报底稿把 status=open（待确认）的计数写成“未关闭进度预警”，已确认属实的不在其中：显示时改成正确的说法（验收 B2）
+        t = _ZERO_HINT.sub("", raw).strip().replace("未关闭进度预警：红", "待确认进度预警：红")
+        if t.startswith("进度预警：红"):
+            t = "待确认" + t
         if t and not t.startswith("日期 ") and t != "【事实底稿】" and scope_ok(t):
             lines.append(t)
     return {"source": _SOURCE_NAME.get(content.get("source"), ""), "note": content.get("note") or "", "lines": lines[:15]}
@@ -401,6 +404,10 @@ def latest(conn, project_id: int, day: str | None = None) -> dict | None:
     elif c.get("headline") and zero_sample_problems(c["headline"], _zero_from_facts(c.get("facts"))):
         c["headline"] = ""
     c["basis"] = basis(c)
+    # 旧简报底稿只有待确认的计数：补一行当前“已确认未关闭”的真实数（经理首页“进度风险”、预警页“红色预警”同一口径，验收 B2）
+    if not any("已确认未关闭" in t for t in c["basis"]["lines"]):
+        cf = {r["level"]: r["n"] for r in all_(conn, "SELECT level, COUNT(*) n FROM alerts WHERE project_id=? AND status='confirmed' AND rule<>'stale' GROUP BY level", (project_id,))}
+        c["basis"]["lines"].insert(min(1, len(c["basis"]["lines"])), f"已确认未关闭进度预警（当前）：红 {cf.get('red', 0)} 橙 {cf.get('orange', 0)} 黄 {cf.get('yellow', 0)}")
     return c
 
 

@@ -13,7 +13,7 @@ import json
 import re
 from datetime import date, timedelta
 
-from ..ai.client import AIError, call_json
+from ..ai.client import AIError, call_json, cause_of
 from ..db import all_, loads, now_iso, one
 from . import act_names as _an
 
@@ -128,7 +128,8 @@ def _norm(d) -> dict:
     return {"text": t[:120]}
 
 
-def diagnose(conn, pid: int, code: str, name: str = "", user_id: int | None = None, day: str | None = None, ai: bool = True) -> dict:
+def diagnose(conn, pid: int, code: str, name: str = "", user_id: int | None = None, day: str | None = None, ai: bool = True,
+             cached_only: bool = False) -> dict:
     s = signals(conn, pid, code, day)
     out = {**s, "name": name, "text": rule_text(s), "source": "rule", "note": ""}
     if not ai or not s["signals"]:
@@ -137,6 +138,8 @@ def diagnose(conn, pid: int, code: str, name: str = "", user_id: int | None = No
     hit = one(conn, "SELECT * FROM slowdiag_cache WHERE key=?", (key,))
     if hit:
         return {**out, "text": hit["text"], "source": hit["source"], "note": hit["note"] or ""}
+    if cached_only:   # 打开页面不调用模型（验收 I9）：先给系统统计句，人点“AI 归因”再生成
+        return {**out, "can_ai": True}
     try:
         res = call_json("progress.slowdiag", system=SYSTEM, user=json.dumps({"作业": _an.fmt(code, name), **s}, ensure_ascii=False, default=str),
                         prompt_version=PROMPT_VERSION, mock=lambda: {"text": out["text"]},
@@ -150,7 +153,7 @@ def diagnose(conn, pid: int, code: str, name: str = "", user_id: int | None = No
         else:
             out.update(text=res.data["text"], source="ai")
     except AIError as exc:
-        out["note"] = "AI 暂不可用，用系统统计句（" + str(exc)[:30] + "）"
+        out["note"] = "AI 暂不可用，用系统统计句（" + cause_of(exc) + "）"
     if out["source"] != "ai":   # 只缓存真实模型成功的归因，失败不缓存（RJ 2026-10-09）
         return out
     conn.execute("INSERT OR REPLACE INTO slowdiag_cache(key, project_id, code, text, source, note, created_at) VALUES (?,?,?,?,?,?,?)",

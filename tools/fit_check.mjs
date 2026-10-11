@@ -216,7 +216,7 @@ for (const u of ROLES) {
       await ev(`location.hash = ${JSON.stringify(p.hash)}; window.scrollTo(0,0); 1`);
       await settle();
       await ev(`window.scrollTo(0,0); 1`);
-      // --stress：模拟真实项目里的长英文作业名、长编码：给 main 里每个叶子文字块追加一段不带空格的长串，主要看横向溢出
+      // --stress：模拟真实项目（SEC1）里的长英文作业名、长编码：给 main 里每个叶子文字块追加一段不带空格的长串，主要看横向溢出
       if (STRESS) { await ev(`(() => { for (const el of (document.querySelector("main")||document.body).querySelectorAll("*")) { if (el.children.length || !el.textContent.trim() || /^(SCRIPT|STYLE|OPTION|TEXTAREA)$/.test(el.tagName) || el.closest(".htip-b")) continue; el.textContent += " SEC1-K12+350_PILE-CAP-CONCRETE-POURING-SECTION-B-ABUTMENT-A3"; } return 1; })()`); await sleep(300); }
       await ev(`window.__fitW = ${vp.w}; 1`);
       const m = await ev(MEASURE);
